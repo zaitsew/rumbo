@@ -1,0 +1,13 @@
+place: "Cortina d'Ampezzo"
+country: "Italy"
+airports: [VCE, TSF]
+region: "Dolomites"
+tags: [ski, mountains, hiking]
+best_months: [12, 1, 2, 3, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 6
+  MAD: 4.5
+  BCN: 4
+cost_level: 4
+notes: "Venice airports are about 2 h by road."

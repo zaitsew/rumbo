@@ -1,0 +1,11 @@
+place: "Athens"
+country: "Greece"
+airports: [ATH]
+tags: [culture, museums, city, food]
+best_months: [3, 4, 5, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5
+  MAD: 4
+  BCN: 3
+cost_level: 2

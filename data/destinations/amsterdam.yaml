@@ -1,0 +1,11 @@
+place: "Amsterdam"
+country: "Netherlands"
+airports: [AMS]
+tags: [city, museums, culture, cycling, nightlife]
+best_months: [4, 5, 6, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 2.5
+  MAD: 2.5
+  BCN: 2.5
+cost_level: 4

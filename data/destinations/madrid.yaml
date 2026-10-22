@@ -1,0 +1,12 @@
+place: "Madrid"
+country: "Spain"
+airports: [MAD]
+tags: [city, food, culture, museums, nightlife, concerts]
+best_months: [3, 4, 5, 6, 9, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 1.5
+  MAD: 0
+  BCN: 2.5
+cost_level: 3
+notes: "High-speed train from Valencia takes about 1.5 h; the hours from Valencia and Barcelona are the train."

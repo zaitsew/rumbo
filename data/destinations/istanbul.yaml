@@ -1,0 +1,11 @@
+place: "Istanbul"
+country: "Türkiye"
+airports: [IST, SAW]
+tags: [culture, city, food, museums]
+best_months: [4, 5, 9, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5.5
+  MAD: 4.5
+  BCN: 3.5
+cost_level: 2

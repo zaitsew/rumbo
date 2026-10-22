@@ -1,0 +1,11 @@
+place: "Seville"
+country: "Spain"
+airports: [SVQ]
+tags: [city, culture, food, nightlife]
+best_months: [3, 4, 5, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 1.5
+  MAD: 1.5
+  BCN: 2
+cost_level: 2

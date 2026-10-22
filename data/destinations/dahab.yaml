@@ -1,0 +1,12 @@
+place: "Dahab"
+country: "Egypt"
+airports: [SSH]
+tags: [dive, kitesurf, nature]
+best_months: [3, 4, 5, 9, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 8.5
+  MAD: 10
+  BCN: 8
+cost_level: 1
+notes: "Fly to Sharm el-Sheikh (SSH); Dahab is about 1.5 h by road."

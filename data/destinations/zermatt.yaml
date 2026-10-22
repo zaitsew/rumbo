@@ -1,0 +1,13 @@
+place: "Zermatt"
+country: "Switzerland"
+airports: [GVA, ZRH]
+region: "Alps"
+tags: [ski, mountains, hiking]
+best_months: [12, 1, 2, 3, 4, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 7.5
+  MAD: 5.5
+  BCN: 5
+cost_level: 4
+notes: "Car-free village reached by train from Täsch; Geneva or Zurich is about 3.5 h away."

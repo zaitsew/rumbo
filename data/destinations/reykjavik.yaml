@@ -1,0 +1,11 @@
+place: "Reykjavik"
+country: "Iceland"
+airports: [KEF]
+tags: [nature, hiking, wellness, road-trip]
+best_months: [2, 3, 6, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 6.5
+  MAD: 6
+  BCN: 6
+cost_level: 4

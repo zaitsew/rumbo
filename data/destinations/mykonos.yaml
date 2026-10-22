@@ -1,0 +1,12 @@
+place: "Mykonos"
+country: "Greece"
+airports: [JMK]
+region: "Cyclades"
+tags: [beach, nightlife]
+best_months: [6, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5.5
+  MAD: 5.5
+  BCN: 5
+cost_level: 4

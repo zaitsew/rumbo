@@ -1,0 +1,11 @@
+place: "Mexico City"
+country: "Mexico"
+airports: [MEX]
+tags: [food, culture, museums, city]
+best_months: [3, 4, 5, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 16
+  MAD: 12.5
+  BCN: 13
+cost_level: 2

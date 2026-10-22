@@ -1,0 +1,12 @@
+place: "Biarritz"
+country: "France"
+airports: [BIQ]
+region: "Basque Coast"
+tags: [surf, beach, food]
+best_months: [6, 7, 8, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 3
+  MAD: 1.5
+  BCN: 3
+cost_level: 3

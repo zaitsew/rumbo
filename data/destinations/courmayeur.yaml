@@ -1,0 +1,13 @@
+place: "Courmayeur"
+country: "Italy"
+airports: [GVA, TRN]
+region: "Alps"
+tags: [ski, mountains, hiking, food]
+best_months: [12, 1, 2, 3, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5.5
+  MAD: 4
+  BCN: 5
+cost_level: 3
+notes: "Geneva is about 1.5 h by road, Turin about 2 h."

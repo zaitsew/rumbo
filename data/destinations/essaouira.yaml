@@ -1,0 +1,12 @@
+place: "Essaouira"
+country: "Morocco"
+airports: [ESU, RAK]
+tags: [kitesurf, surf, beach, culture]
+best_months: [4, 5, 6, 7, 8, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 7
+  MAD: 7
+  BCN: 7
+cost_level: 2
+notes: "Essaouira's own airport has few flights; Marrakech (RAK) is about 2.5 to 3 h by road."

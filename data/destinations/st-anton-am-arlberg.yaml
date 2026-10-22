@@ -1,0 +1,13 @@
+place: "St Anton am Arlberg"
+country: "Austria"
+airports: [INN, ZRH]
+region: "Alps"
+tags: [ski, mountains, nightlife, hiking]
+best_months: [12, 1, 2, 3, 4, 7, 8]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5.5
+  MAD: 4
+  BCN: 5
+cost_level: 3
+notes: "Innsbruck (INN) is about 1.25 h by road; Zurich is a longer transfer."

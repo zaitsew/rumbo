@@ -1,0 +1,11 @@
+place: "Stockholm"
+country: "Sweden"
+airports: [ARN]
+tags: [city, culture, museums, nature]
+best_months: [5, 6, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 6
+  MAD: 4
+  BCN: 3.5
+cost_level: 4

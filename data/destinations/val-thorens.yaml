@@ -1,0 +1,13 @@
+place: "Val Thorens"
+country: "France"
+airports: [GVA, LYS, CMF]
+region: "Alps"
+tags: [ski, mountains]
+best_months: [12, 1, 2, 3, 4]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 6.5
+  MAD: 5
+  BCN: 4.5
+cost_level: 4
+notes: "Three Valleys ski area. Geneva, Lyon and Chambéry are each about 2.5 to 3.5 h by road or transfer."
