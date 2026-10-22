@@ -1,31 +1,54 @@
-# Rendered into /srv/rumbo/docker-compose.yml by the shared server's add-product.sh.
+# A fragment, not a stack. add-product.sh renders it to /srv/rumbo/docker-compose.yml
+# on the shared server and adds that path to the root /srv/docker-compose.yml's
+# `include:` list, so the root file is never edited by hand.
 #
-# Rules that make one box hold many products:
-#   - no published ports; the proxy reaches the service over the shared `apps` network
-#   - the image is pulled, not built on the server
-#   - every value comes from ./.env, which lives on the server at mode 600
-#   - a memory limit, so one product cannot take the box down for the others
+# Caddy (on the external network `apps`) reaches this service by name. Nothing
+# publishes a port to the host.
+#
+# Redeploy with scripts/deploy.sh. To do it by hand, use the ROOT stack, not this
+# file on its own, so the container stays in the one compose project:
+#   cd /srv && docker compose up -d --build rumbo
+
 services:
   rumbo:
-    image: ghcr.io/your-github-owner/rumbo:latest
-    container_name: rumbo
+    # Built on the box from the bundle rsynced to ./app (see deploy/droplet/Dockerfile).
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: rumbo-web:latest
     restart: unless-stopped
+    # add-product.sh creates /srv/{{name}}/.env from deploy/droplet/.env.example. Put
+    # RUMBO_OWNER_KEY there (openssl rand -hex 24); the site refuses everyone without it.
     env_file:
-      - ./.env
-    expose:
-      - "{{port}}"
+      - /srv/{{name}}/.env
+    environment:
+      NODE_ENV: production
+      PORT: "{{port}}"
+      HOSTNAME: "0.0.0.0"
+      # Where the SQLite file lives inside the container: the volume below.
+      RUMBO_DB: /data/rumbo.db
+    volumes:
+      # The data volume: the database and its WAL files survive rebuilds. Owned by uid 1000
+      # (the image's `node` user); scripts/deploy.sh fixes the owner on every run.
+      - /srv/{{name}}/data:/data
+    # Next stays well under its 192 MB heap cap; 300 MB leaves room for the runtime.
+    mem_limit: 300m
+    cpus: 0.5
     networks:
       - apps
-    deploy:
-      resources:
-        limits:
-          memory: 512M
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:{{port}}/health"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:{{port}}/api/v1/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
 networks:
+  # Declared external: this fragment joins the network Caddy is on instead of making one.
   apps:
     external: true

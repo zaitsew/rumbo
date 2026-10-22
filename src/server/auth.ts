@@ -173,3 +173,8 @@ export function requireOwner(request: Request): Response | null {
 export function allowSignInAttempt(ip: string): boolean {
   return authFailLimiter().take(`signin:${ip}`);
 }
+
+/** Only same-site paths survive: "/profile" yes; "//evil.com", "/\\evil.com" and "https://evil.com" become "/". */
+export function safeNextPath(value: unknown): string {
+  return typeof value === "string" && /^\/(?![/\\])/.test(value) ? value : "/";
+}

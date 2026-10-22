@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# The first-run check: prints what's missing, verifies the toolchain, runs
-# tests if any exist. Exits non-zero with a clear list if something is wrong.
+# The first-run check: prints what's missing, verifies the toolchain, runs the
+# type check, tests and data validation. Exits non-zero with a clear list if something is wrong.
 #
 #   ./check.sh
 set -uo pipefail
@@ -13,39 +13,44 @@ cd "$(dirname "$0")"
 # Supabase product reads its counters with: teyla probe-sql <ref> "select …"
 case "${1:-}" in
   usage)
-    # EDIT ME: replace with real counters, e.g.
-    #   echo "items=$(sqlite3 data/app.db 'select count(*) from items')"
-    echo "usage_probe=not_implemented"
+    # Counters come from the product's own SQLite store (RUMBO_DB, default ./data/rumbo.db).
+    if [ -d node_modules ]; then
+      npm run -s usage
+    else
+      echo "usage_probe=not_installed"
+    fi
     exit 0 ;;
 esac
 
 missing=()
 warnings=()
 
-# --- env vars listed in .env.example -----------------------------------
+# --- env vars -------------------------------------------------------------
+# Only RUMBO_OWNER_KEY is required. Everything else in .env.example is optional: a source
+# whose key is missing stays off, and RUMBO_DB defaults to ./data/rumbo.db.
+REQUIRED_ENV=(RUMBO_OWNER_KEY)
 if [ -f .env ]; then
   set -a
   # shellcheck disable=SC1091
   source .env
   set +a
 fi
-if [ -f .env.example ]; then
-  while IFS= read -r line; do
-    case "$line" in
-      \#*|"") continue ;;
-    esac
-    var="${line%%=*}"
-    [ -z "$var" ] && continue
-    if [ -z "${!var:-}" ]; then
-      missing+=("env: $var (see .env.example)")
-    fi
-  done < .env.example
-fi
+for var in "${REQUIRED_ENV[@]}"; do
+  if [ -z "${!var:-}" ]; then
+    missing+=("env: $var (copy .env.example to .env; generate one with: openssl rand -hex 24)")
+  fi
+done
 
 # --- toolchain -----------------------------------------------------------
 if [ -f package.json ]; then
-  command -v node >/dev/null 2>&1 || missing+=("toolchain: node (package.json present)")
+  if command -v node >/dev/null 2>&1; then
+    node_major="$(node -p 'process.versions.node.split(".")[0]')"
+    [ "$node_major" -ge 24 ] || missing+=("toolchain: node >= 24 (found $(node -v)); node:sqlite needs it")
+  else
+    missing+=("toolchain: node >= 24 (package.json present)")
+  fi
   command -v npm  >/dev/null 2>&1 || missing+=("toolchain: npm (package.json present)")
+  [ -d node_modules ] || missing+=("run: npm install")
 fi
 if [ -f pyproject.toml ] || [ -f requirements.txt ]; then
   command -v python3 >/dev/null 2>&1 || missing+=("toolchain: python3")
@@ -66,9 +71,11 @@ fi
 # --- tests, if any exist ---------------------------------------------------
 ran_tests=0
 if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
-  npm test && ran_tests=1 || { echo "npm test FAILED"; exit 1; }
+  npx tsc --noEmit || { echo "npx tsc --noEmit FAILED"; exit 1; }
+  npx vitest run && ran_tests=1 || { echo "npx vitest run FAILED"; exit 1; }
+  npm run -s validate-data || { echo "npm run validate-data FAILED"; exit 1; }
 fi
-if { [ -f pyproject.toml ] || [ -d tests ]; } && command -v python3 >/dev/null 2>&1; then
+if { [ -f pyproject.toml ] || [ -f requirements.txt ]; } && command -v python3 >/dev/null 2>&1; then
   if python3 -m pytest --version >/dev/null 2>&1; then
     python3 -m pytest -q && ran_tests=1 || { echo "pytest FAILED"; exit 1; }
   fi
@@ -82,5 +89,5 @@ if [ "$ran_tests" -eq 0 ]; then
 fi
 
 echo "OK"
-for w in "${warnings[@]}"; do echo "  note: $w"; done
+for w in ${warnings[@]+"${warnings[@]}"}; do echo "  note: $w"; done
 exit 0

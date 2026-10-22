@@ -8,6 +8,7 @@ import {
   keyFromMcpPath,
   readCookie,
   safeEqual,
+  safeNextPath,
   sessionCookieOptions,
   sessionValue,
 } from "../src/server/auth";
@@ -97,5 +98,16 @@ describe("authenticate", () => {
     expect(readCookie("a=1; b=2", "b")).toBe("2");
     expect(readCookie("ab=1", "b")).toBeNull();
     expect(readCookie(null, "b")).toBeNull();
+  });
+});
+
+describe("safeNextPath", () => {
+  it("keeps same-site paths and drops everything else", () => {
+    expect(safeNextPath("/profile")).toBe("/profile");
+    expect(safeNextPath("/watches?x=1")).toBe("/watches?x=1");
+    expect(safeNextPath("//evil.com")).toBe("/");
+    expect(safeNextPath("/\\evil.com")).toBe("/");
+    expect(safeNextPath("https://evil.com")).toBe("/");
+    expect(safeNextPath(undefined)).toBe("/");
   });
 });

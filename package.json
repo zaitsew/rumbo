@@ -13,7 +13,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "validate-data": "tsx scripts/validate-data.ts",
-    "usage": "tsx scripts/usage.ts"
+    "usage": "tsx scripts/usage.ts",
+    "seed-profile": "tsx scripts/seed-profile.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
