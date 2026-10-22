@@ -46,24 +46,24 @@ export const ProfileSchema = z.object({
   home_airports: z.array(Iata).min(1), // ordered by preference: ["VLC", "ALC", "MAD", "BCN"]
   currency: z.string().regex(/^[A-Z]{3}$/).default("EUR"),
   languages: z.array(z.string()).default([]),
-  travellers: z.object({ adults: z.number().int().min(1).default(1), children: z.number().int().min(0).default(0) }).default({ adults: 1, children: 0 }),
+  travellers: z.object({ adults: z.number().int().min(1).default(1), children: z.number().int().min(0).default(0) }).prefault({}),
   /** -2 (avoid) to +2 (love). Missing means neutral. */
-  interests: z.record(InterestSchema, z.number().int().min(-2).max(2)).default({}),
+  interests: z.partialRecord(InterestSchema, z.number().int().min(-2).max(2)).default({}),
   budget: z.object({
     flight_max: MoneySchema.optional(), // per person, return
     night_max: MoneySchema.optional(), // per room
-  }).default({}),
+  }).prefault({}),
   flight: z.object({
     max_stops: z.number().int().min(0).max(3).default(1),
     max_hours_one_way: z.number().positive().default(8),
     earliest_departure: z.string().regex(/^\d{2}:\d{2}$/).optional(), // "07:00"
     avoid_airlines: z.array(z.string()).default([]),
     preferred_airlines: z.array(z.string()).default([]),
-  }).default({}),
+  }).prefault({}),
   stay: z.object({
     kinds: z.array(z.enum(["hotel", "apartment", "hostel", "villa", "camping", "boutique"])).default([]),
     min_rating: z.number().min(0).max(10).optional(), // Booking-style 0..10
-  }).default({}),
+  }).prefault({}),
   /** Windows the owner can travel; ranker boosts offers inside them. */
   free_windows: z.array(z.object({ from: Day, to: Day, note: z.string().optional() })).default([]),
   /** Days already taken (Loco trips, calendar). Offers overlapping them rank lower. */
