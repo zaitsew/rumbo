@@ -1,0 +1,142 @@
+# teyla.toml — what must run without you, and what only you can confirm.
+#
+# `teyla routines` reads this file. `teyla run` reads the routines in it that
+# declare a `step`. Both halves rot silently, which is why they live in one file.
+
+[product]
+name = "rumbo"
+# A command printing key=value counters, read by `teyla products`. The
+# built-but-nobody-used-it detector — fill it in before you ship, not after.
+# usage = "./check.sh usage"
+
+# Apple distribution: the bundle id `teyla testflight` asks App Store Connect about.
+# [release]
+# apple_bundle_id = "com.example.app"
+
+# Android distribution: the application id `teyla play` asks Google Play about.
+# android_package = "com.example.app"
+
+
+# ---------------------------------------------------------------------------
+# Who this serves, and who it should serve next. `teyla productize` reads this
+# block and says what stands between the two. Fill it in now — the answers are
+# cheap while the code is small and expensive once someone is waiting.
+# ---------------------------------------------------------------------------
+[productize]
+users = "owner"                         # owner | family | testers | public
+target = "family"                       # what you want next
+platforms = ["web"]                     # ios | macos | web | android | watch | extension | cli
+primary = "web"                         # the one platform features land on first (POLICY §11);
+                                        # every other entry in `platforms` needs a dated
+                                        # line in [productize.triggers] below (R10)
+identity = "none"                       # none | shared-key | invite-key | supabase-auth |
+                                        # supabase-auth+tokens | sign-in-with-apple | icloud
+tenancy = "single"                      # single | per-device | user_id | user_id+rls
+backend = "none"                        # none | local-mac | supabase:<ref> | droplet:<name> |
+                                        # vercel | github-pages
+llm = "none"                            # none | byo-key | app-key | proxy-metered |
+                                        # byo-key+proxy-metered
+first_run = "none"                      # sign-in | sign-in+skip | none — the screen the
+                                        # app opens on; see "The first screen" in
+                                        # docs/PRODUCTIZE.md. Never "none" for family/public.
+sample_data = "unlabelled"              # none | labelled | unlabelled — canned content must
+                                        # never look like the user's own
+onboarding_doc = "docs/GETTING-STARTED.md"
+secrets = []                            # every name must appear in .env.example
+cost_cap = ""                           # required once your key pays for someone else's use
+
+[productize.distribution]
+web = "none"                            # none | pwa | github-pages | vercel | droplet
+# ios = "none"                          # none | xcode | testflight-internal |
+#                                       # testflight-external | app-store
+# macos = "none"                        # none | xcode | testflight | dmg-notarized | app-store
+# android = "none"                      # none | apk-sideload | pwa | play-internal | play
+# extension = "none"                    # none | unpacked-zip | chrome-web-store
+# watch = "none"                        # none | testflight-external | app-store |
+#                                       # connect-iq-sideload | connect-iq-store | garmin-connect
+
+# One line per platform in `platforms` other than `primary`: an ISO date, then the
+# reason (a named person who cannot use the primary, or the owner asking for it).
+# [productize.triggers]
+# android = "2026-01-15: a named tester has no iPhone"
+
+# One per thing standing in the way. `who` is who can actually do it — an owner
+# blocker is an account, a payment or a signature; an agent blocker is work.
+# [[productize.blocker]]
+# what = "no account system"
+# who = "agent"
+# how = "user_id + row-level security from the first migration, not retrofitted"
+
+
+# ---------------------------------------------------------------------------
+# A control-plane routine: Teyla runs this one itself.
+#
+#   teyla run rumbo:example --dry     see the plan, create nothing
+#   teyla run rumbo:example           draft -> gate A -> inbox
+#   teyla inbox list                     what is waiting for you
+#
+# Gate A is where every routine starts: it drafts, it stops, and nothing leaves
+# without you approving that exact version. Gate B and C are earned, from
+# receipts, via `teyla promote` — not chosen here. See docs/CONTROL-PLANE.md in
+# the teyla repo.
+# ---------------------------------------------------------------------------
+[[routine]]
+name = "example"
+gate = "A"
+idempotency = "date"                    # date | none | input-hash
+
+# Only `clock` triggers are built. Install one with
+# `teyla triggers install rumbo:example`; until then this routine is manual.
+trigger = { type = "clock", at = "09:00", tz = "Europe/London", days = "mon-fri" }
+
+# The draft step. `kind = "command"` runs a shell command and captures its
+# stdout as the draft. `kind = "agent"` calls a model instead:
+#   step = { kind = "agent", harness = "claude", skill = "digest-draft",
+#            prompt = "Draft today's digest.", context = ["runs/**", "NOTES.md"] }
+step = { kind = "command", run = "echo 'replace me: this is the draft this routine produces'" }
+
+# The act step. Optional at gate A — this is what `teyla inbox approve` runs
+# once you have read the draft. Required at gate B and C.
+#
+# Write the reversal of whatever you did to $TEYLA_UNDO. A run with no undo is
+# recorded as "NO UNDO AVAILABLE" in its receipt, and that is the fact that
+# decides whether this routine should ever be promoted off gate A.
+act = { kind = "command", run = "echo 'replace me: what happens after you approve'; echo 'replace me: the command that reverses it' > \"$TEYLA_UNDO\"" }
+
+# Capabilities, as `<scheme>:<value>`. Only what the routine was observed to
+# need — an unused capability is invisible in review until something uses it.
+# Schemes: fs.write:<glob>  shell:<verb>  net:<host>  send:<channel>  tool:<name>
+#
+# A `command` step is checked against these too, before it runs — it never meets
+# the PreToolUse hook, so this is the only place it can be checked. `shell:echo`
+# is what lets the two commands above run at all, and `fs.write:runs/**` is what
+# lets the act step redirect into $TEYLA_UNDO, which lives in the run directory.
+capabilities = ["fs.write:runs/**", "shell:echo"]
+
+# Enforced by code: max_minutes is a wall clock on every step; max_writes and
+# max_sends are counted by the PreToolUse hook and deny past the cap.
+caps = { max_minutes = 10, max_writes = 20, max_sends = 0 }
+
+
+# ---------------------------------------------------------------------------
+# A legacy routine: scheduled somewhere else, reported on here.
+# kind = launchd | cron | pg_cron | github-actions | script
+# ---------------------------------------------------------------------------
+# [[routine]]
+# name = "nightly-sync"
+# kind = "launchd"
+# label = "com.example.sync"
+# every = "1d"                          # 15m | 1h | 1d | 7d | any <n>m|h|d (script routines may omit label and every)
+# log = "~/Library/Logs/example-sync.log"
+# paused = "2026-01-01: owner keeps it off until the product is reviewed"   # deliberately off: shown as
+#                                       # `paused`, never a problem; delete the key to watch it again
+
+
+# ---------------------------------------------------------------------------
+# A check: the half only a human can confirm, from the outside, today.
+# ---------------------------------------------------------------------------
+[[check]]
+name = "first-run check passes on a clean machine"
+how = "clone the repo, run ./check.sh, read what it says"
+status = "untested"                     # ok | broken | untested
+# confirmed = 2026-01-01

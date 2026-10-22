@@ -1,0 +1,13 @@
+# Copy to profile.local.yaml (gitignored) and run `npm run seed-profile` once.
+# After that the profile lives in the database; edit it on /profile or let agents update it.
+home_city: Valencia
+home_airports: [VLC, ALC, MAD, BCN]
+currency: EUR
+travellers: { adults: 2, children: 0 }
+interests: { beach: 1, city: 1, food: 2, wine: 1, kitesurf: 1, ski: 1 }
+budget:
+  flight_max: { amount_minor: 25000, currency: EUR }
+  night_max: { amount_minor: 18000, currency: EUR }
+flight: { max_stops: 1, max_hours_one_way: 8 }
+free_windows: []
+wishlist: [Lisbon, Madeira]
