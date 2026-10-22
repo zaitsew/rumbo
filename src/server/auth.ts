@@ -77,10 +77,19 @@ export function readCookie(header: string | null | undefined, name: string): str
   return null;
 }
 
-/** A host header is local when it names this machine; a forwarded request never counts. */
+function isLoopback(address: string): boolean {
+  const a = address.trim().replace(/^::ffff:/i, "");
+  return a === "127.0.0.1" || a === "::1" || a === "localhost";
+}
+
+/**
+ * Local means the Host header names this machine and every hop of `x-forwarded-for` is loopback.
+ * `next dev` adds `x-forwarded-for: ::1` itself; a real proxy appends the visitor's address, so a
+ * remote request never passes, whatever Host it claims.
+ */
 export function isLocalRequest(host: string | null | undefined, forwardedFor?: string | null): boolean {
-  if (forwardedFor) return false;
   if (!host) return false;
+  if (forwardedFor && !forwardedFor.split(",").every(isLoopback)) return false;
   const name = host.startsWith("[") ? host.slice(0, host.indexOf("]") + 1) : host.split(":")[0]!;
   return name === "localhost" || name === "127.0.0.1" || name === "[::1]";
 }

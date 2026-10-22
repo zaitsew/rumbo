@@ -91,6 +91,9 @@ describe("authenticate", () => {
     expect(isLocalRequest("127.0.0.1")).toBe(true);
     expect(isLocalRequest("[::1]:3000")).toBe(true);
     expect(isLocalRequest("localhost.evil.com")).toBe(false);
+    expect(isLocalRequest("localhost:3000", "::1")).toBe(true); // what next dev adds itself
+    expect(isLocalRequest("localhost:3000", "::ffff:127.0.0.1")).toBe(true);
+    expect(isLocalRequest("localhost:3000", "127.0.0.1, 203.0.113.9")).toBe(false); // a proxy appended a visitor
     expect(isLocalRequest(null)).toBe(false);
   });
 
