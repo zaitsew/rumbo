@@ -1,0 +1,162 @@
+{
+  "_synthetic": true,
+  "_note": "Built from the documented POST /air/offer_requests response (Duffel-Version v2).",
+  "data": {
+    "id": "orq_0000test",
+    "live_mode": false,
+    "offers": [
+      {
+        "id": "off_0001",
+        "total_amount": "212.80",
+        "total_currency": "EUR",
+        "expires_at": "2026-10-23T09:30:00Z",
+        "owner": {
+          "name": "TAP Air Portugal"
+        },
+        "slices": [
+          {
+            "duration": "PT01H45M",
+            "segments": [
+              {
+                "origin": {
+                  "iata_code": "VLC",
+                  "city_name": "Valencia",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Madrid"
+                },
+                "destination": {
+                  "iata_code": "LIS",
+                  "city_name": "Lisbon",
+                  "iata_country_code": "PT",
+                  "time_zone": "Europe/Lisbon"
+                },
+                "departing_at": "2026-12-05T05:55:00",
+                "arriving_at": "2026-12-05T06:40:00",
+                "marketing_carrier": {
+                  "name": "TAP Air Portugal",
+                  "iata_code": "TP"
+                },
+                "marketing_carrier_flight_number": "1097",
+                "duration": "PT01H45M"
+              }
+            ]
+          },
+          {
+            "duration": "PT01H35M",
+            "segments": [
+              {
+                "origin": {
+                  "iata_code": "LIS",
+                  "city_name": "Lisbon",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Lisbon"
+                },
+                "destination": {
+                  "iata_code": "VLC",
+                  "city_name": "Valencia",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Madrid"
+                },
+                "departing_at": "2026-12-09T21:15:00",
+                "arriving_at": "2026-12-09T23:50:00",
+                "marketing_carrier": {
+                  "name": "TAP Air Portugal",
+                  "iata_code": "TP"
+                },
+                "marketing_carrier_flight_number": "1098",
+                "duration": "PT01H35M"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "off_0002",
+        "total_amount": "164.10",
+        "total_currency": "EUR",
+        "expires_at": "2026-10-23T09:25:00Z",
+        "owner": {
+          "name": "Iberia"
+        },
+        "slices": [
+          {
+            "duration": "PT10H00M",
+            "segments": [
+              {
+                "origin": {
+                  "iata_code": "VLC",
+                  "city_name": "Valencia",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Madrid"
+                },
+                "destination": {
+                  "iata_code": "MAD",
+                  "city_name": "Madrid",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Madrid"
+                },
+                "departing_at": "2026-12-05T14:25:00",
+                "arriving_at": "2026-12-05T15:30:00",
+                "marketing_carrier": {
+                  "name": "Iberia",
+                  "iata_code": "IB"
+                },
+                "marketing_carrier_flight_number": "1078",
+                "duration": "PT01H05M"
+              },
+              {
+                "origin": {
+                  "iata_code": "MAD",
+                  "city_name": "Madrid",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Madrid"
+                },
+                "destination": {
+                  "iata_code": "LIS",
+                  "city_name": "Lisbon",
+                  "iata_country_code": "PT",
+                  "time_zone": "Europe/Lisbon"
+                },
+                "departing_at": "2026-12-05T23:00:00",
+                "arriving_at": "2026-12-05T23:25:00",
+                "marketing_carrier": {
+                  "name": "Iberia",
+                  "iata_code": "IB"
+                },
+                "marketing_carrier_flight_number": "3118",
+                "duration": "PT01H25M"
+              }
+            ]
+          },
+          {
+            "duration": "PT02H00M",
+            "segments": [
+              {
+                "origin": {
+                  "iata_code": "LIS",
+                  "city_name": "Lisbon",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Lisbon"
+                },
+                "destination": {
+                  "iata_code": "VLC",
+                  "city_name": "Valencia",
+                  "iata_country_code": "ES",
+                  "time_zone": "Europe/Madrid"
+                },
+                "departing_at": "2026-12-09T10:00:00",
+                "arriving_at": "2026-12-09T13:00:00",
+                "marketing_carrier": {
+                  "name": "Iberia",
+                  "iata_code": "IB"
+                },
+                "marketing_carrier_flight_number": "3119",
+                "duration": "PT02H00M"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,220 @@
+{
+  "_synthetic": true,
+  "_note": "Built from the documented Discovery API v2 response shape (developer.ticketmaster.com).",
+  "_embedded": {
+    "events": [
+      {
+        "id": "Z7r9jZ1A7dkq0",
+        "name": "Café Tacvba - Live in Valencia",
+        "url": "https://www.ticketmaster.es/event/cafe-tacvba-valencia-entradas/1",
+        "dates": {
+          "start": {
+            "localDate": "2026-12-12",
+            "dateTime": "2026-12-12T19:00:00Z"
+          },
+          "status": {
+            "code": "onsale"
+          }
+        },
+        "priceRanges": [
+          {
+            "type": "standard",
+            "currency": "EUR",
+            "min": 38.5,
+            "max": 75
+          }
+        ],
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "name": "Music"
+            },
+            "genre": {
+              "name": "Rock"
+            },
+            "subGenre": {
+              "name": "Alternative Rock"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Roig Arena",
+              "city": {
+                "name": "Valencia"
+              },
+              "country": {
+                "countryCode": "ES"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "Z7r9jZ1A7dkq1",
+        "name": "Valencia Basket vs Real Madrid",
+        "url": "https://www.ticketmaster.es/event/valencia-basket-real-madrid/2",
+        "dates": {
+          "start": {
+            "localDate": "2026-12-20",
+            "dateTime": "2026-12-20T17:30:00Z"
+          },
+          "status": {
+            "code": "onsale"
+          }
+        },
+        "classifications": [
+          {
+            "segment": {
+              "name": "Sports"
+            },
+            "genre": {
+              "name": "Basketball"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Roig Arena",
+              "city": {
+                "name": "Valencia"
+              },
+              "country": {
+                "countryCode": "ES"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "Z7r9jZ1A7dkq2",
+        "name": "Ballet Nacional: El Lago de los Cisnes",
+        "url": "https://www.ticketmaster.es/event/lago-cisnes/3",
+        "dates": {
+          "start": {
+            "localDate": "2026-12-27"
+          },
+          "end": {
+            "localDate": "2026-12-29"
+          },
+          "status": {
+            "code": "onsale"
+          }
+        },
+        "priceRanges": [
+          {
+            "type": "standard",
+            "currency": "EUR",
+            "min": 25,
+            "max": 60
+          }
+        ],
+        "classifications": [
+          {
+            "segment": {
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "name": "Dance"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Palau de les Arts Reina Sofía",
+              "city": {
+                "name": "Valencia"
+              },
+              "country": {
+                "countryCode": "ES"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "Z7r9jZ1A7dkq3",
+        "name": "Winter Beats Festival 2026",
+        "url": "https://www.ticketmaster.es/event/winter-beats/4",
+        "dates": {
+          "start": {
+            "localDate": "2026-12-31",
+            "dateTime": "2026-12-31T21:00:00Z"
+          },
+          "status": {
+            "code": "onsale"
+          }
+        },
+        "classifications": [
+          {
+            "segment": {
+              "name": "Music"
+            },
+            "genre": {
+              "name": "Electronic"
+            },
+            "type": {
+              "name": "Festival"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Marina de València",
+              "city": {
+                "name": "Valencia"
+              },
+              "country": {
+                "countryCode": "ES"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "Z7r9jZ1A7dkq4",
+        "name": "Cancelled Show",
+        "url": "https://www.ticketmaster.es/event/x/5",
+        "dates": {
+          "start": {
+            "localDate": "2026-12-15"
+          },
+          "status": {
+            "code": "cancelled"
+          }
+        },
+        "classifications": [
+          {
+            "segment": {
+              "name": "Music"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Sala Moon",
+              "city": {
+                "name": "Valencia"
+              },
+              "country": {
+                "countryCode": "ES"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "page": {
+    "size": 100,
+    "totalElements": 5,
+    "totalPages": 1,
+    "number": 0
+  }
+}

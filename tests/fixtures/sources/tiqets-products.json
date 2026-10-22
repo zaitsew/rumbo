@@ -1,0 +1,58 @@
+{
+  "_synthetic": true,
+  "_note": "Built from the Distributor API v2 GET /products response schema (developers.tiqets.dev).",
+  "success": true,
+  "pagination": {
+    "total": 3,
+    "page": 1,
+    "page_size": 20
+  },
+  "products": [
+    {
+      "id": "975001",
+      "title": "Oceanogràfic Valencia Entry Ticket",
+      "tagline": "Europe's largest aquarium",
+      "city_name": "Valencia",
+      "city_id": "260",
+      "country_name": "Spain",
+      "country_id": "1",
+      "price": 36.9,
+      "currency": "EUR",
+      "ratings": {
+        "average": 4.4,
+        "total": 3120
+      },
+      "duration": "04:00:00",
+      "sale_status": "available",
+      "product_url": "https://www.tiqets.com/en/valencia-attractions-c260/tickets-for-oceanografic-valencia-p975001/?partner=rumbo",
+      "product_slug": "tickets-for-oceanografic-valencia"
+    },
+    {
+      "id": "975002",
+      "title": "City of Arts and Sciences: Hemisfèric",
+      "city_name": "Valencia",
+      "country_name": "Spain",
+      "price": 9.5,
+      "currency": "EUR",
+      "ratings": {
+        "average": 4.1,
+        "total": 420
+      },
+      "duration": "01:00:00",
+      "sale_status": "available",
+      "product_url": "https://www.tiqets.com/en/valencia-attractions-c260/hemisferic-p975002/"
+    },
+    {
+      "id": "975003",
+      "title": "Closed Museum Ticket",
+      "city_name": "Valencia",
+      "country_name": "Spain",
+      "price": null,
+      "currency": null,
+      "ratings": null,
+      "duration": null,
+      "sale_status": "unavailable",
+      "product_url": "https://www.tiqets.com/x"
+    }
+  ]
+}

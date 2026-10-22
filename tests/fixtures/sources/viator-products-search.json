@@ -1,0 +1,78 @@
+{
+  "_synthetic": true,
+  "_note": "Built from the published OpenAPI document (POST /products/search response).",
+  "products": [
+    {
+      "productCode": "5657VLC1",
+      "title": "Valencia Paella Cooking Class with Market Visit",
+      "description": "Cook paella with a local chef.",
+      "reviews": {
+        "totalReviews": 1204,
+        "combinedAverageRating": 4.8
+      },
+      "duration": {
+        "fixedDurationInMinutes": 180
+      },
+      "pricing": {
+        "summary": {
+          "fromPrice": 59.0,
+          "fromPriceBeforeDiscount": 65.0
+        },
+        "currency": "EUR"
+      },
+      "productUrl": "https://www.viator.com/tours/Valencia/Paella-Cooking-Class/d50-5657VLC1?pid=P00012345&mcid=42383&medium=api",
+      "tags": [
+        21911
+      ],
+      "destinations": [
+        {
+          "ref": "50",
+          "primary": true
+        }
+      ]
+    },
+    {
+      "productCode": "5657VLC2",
+      "title": "Albufera Natural Park Sunset Boat Tour",
+      "reviews": {
+        "totalReviews": 88,
+        "combinedAverageRating": 4.5
+      },
+      "duration": {
+        "variableDurationFromMinutes": 60,
+        "variableDurationToMinutes": 90
+      },
+      "pricing": {
+        "summary": {
+          "fromPrice": 22.5
+        },
+        "currency": "EUR"
+      },
+      "productUrl": "https://www.viator.com/tours/Valencia/Albufera-Sunset/d50-5657VLC2?pid=P00012345",
+      "destinations": [
+        {
+          "ref": "50",
+          "primary": true
+        }
+      ]
+    },
+    {
+      "productCode": "5657VLC3",
+      "title": "Valencia Old Town Walking Tour",
+      "reviews": {
+        "totalReviews": 0
+      },
+      "duration": {
+        "unstructuredDuration": "2 hours"
+      },
+      "pricing": {
+        "summary": {
+          "fromPrice": 0
+        },
+        "currency": "EUR"
+      },
+      "productUrl": "https://www.viator.com/tours/Valencia/Walking/d50-5657VLC3"
+    }
+  ],
+  "totalCount": 3
+}

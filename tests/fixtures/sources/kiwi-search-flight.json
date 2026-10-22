@@ -1,0 +1,469 @@
+{
+  "_recorded_at": "2026-10-22T22:59:23.256Z",
+  "_note": "Real response from https://mcp.kiwi.com search-flight, trimmed to 5 itineraries",
+  "arguments": {
+    "flyFrom": "VLC",
+    "flyTo": "LIS",
+    "departureDate": "04/12/2026",
+    "departureDateTo": "06/12/2026",
+    "nights_in_dst_from": 3,
+    "nights_in_dst_to": 4,
+    "adults": 1,
+    "currency": "EUR",
+    "max_sector_stopovers": 1,
+    "sort": "price"
+  },
+  "structuredContent": {
+    "query": "VLC → LIS on 04/12/2026–06/12/2026, 1 adult, 3–4 nights [≤1 stops/sector]",
+    "currency": "EUR",
+    "passengers": {
+      "adults": 1,
+      "children": 0,
+      "infants": 0
+    },
+    "resultsCount": 15,
+    "itineraries": [
+      {
+        "id": "152703585139000077a3fd47_0|03581527513d00004858bbe7_0",
+        "price": 90,
+        "priceFormatted": "90 EUR",
+        "totalDurationSeconds": 12000,
+        "bookingUrl": "https://kiwi.com/u/6b8kjm8",
+        "imageId": "lisbon_pt",
+        "baggage": {
+          "personalItem": 1,
+          "cabinBag": 0,
+          "checkedBag": 0
+        },
+        "outbound": {
+          "from": "VLC",
+          "to": "LIS",
+          "departureTime": "2026-12-06T05:55:00",
+          "arrivalTime": "2026-12-06T06:40:00",
+          "durationSeconds": 6300,
+          "stops": 0,
+          "route": [
+            "VLC",
+            "LIS"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "VLC",
+              "to": "LIS",
+              "fromCity": "Valencia",
+              "toCity": "Lisbon",
+              "fromName": "Valencia",
+              "toName": "Lisbon Portela",
+              "fromCountry": "Spain",
+              "toCountry": "Portugal",
+              "departureTime": "2026-12-06T05:55:00",
+              "arrivalTime": "2026-12-06T06:40:00",
+              "durationSeconds": 6300,
+              "carrier": "TP",
+              "carrierName": "TAP Portugal",
+              "flightNumber": "TP1097",
+              "cabinClass": "Economy"
+            }
+          ]
+        },
+        "inbound": {
+          "from": "LIS",
+          "to": "VLC",
+          "departureTime": "2026-12-10T21:15:00",
+          "arrivalTime": "2026-12-10T23:50:00",
+          "durationSeconds": 5700,
+          "stops": 0,
+          "route": [
+            "LIS",
+            "VLC"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "LIS",
+              "to": "VLC",
+              "fromCity": "Lisbon",
+              "toCity": "Valencia",
+              "fromName": "Lisbon Portela",
+              "toName": "Valencia",
+              "fromCountry": "Portugal",
+              "toCountry": "Spain",
+              "departureTime": "2026-12-10T21:15:00",
+              "arrivalTime": "2026-12-10T23:50:00",
+              "durationSeconds": 5700,
+              "carrier": "FR",
+              "carrierName": "Ryanair",
+              "flightNumber": "FR1768",
+              "cabinClass": "Economy"
+            }
+          ]
+        }
+      },
+      {
+        "id": "15270358513900003f337648_0|15270358513900003f337648_1|03581527513d00004858bbe7_0",
+        "price": 95,
+        "priceFormatted": "95 EUR",
+        "totalDurationSeconds": 41700,
+        "bookingUrl": "https://kiwi.com/u/63vs7tt",
+        "imageId": "lisbon_pt",
+        "baggage": {
+          "personalItem": 1,
+          "cabinBag": 0,
+          "checkedBag": 0
+        },
+        "outbound": {
+          "from": "VLC",
+          "to": "LIS",
+          "departureTime": "2026-12-06T14:25:00",
+          "arrivalTime": "2026-12-06T23:25:00",
+          "durationSeconds": 36000,
+          "stops": 1,
+          "route": [
+            "VLC",
+            "MAD",
+            "LIS"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "VLC",
+              "to": "MAD",
+              "fromCity": "Valencia",
+              "toCity": "Madrid",
+              "fromName": "Valencia",
+              "toName": "Adolfo Suárez Madrid–Barajas",
+              "fromCountry": "Spain",
+              "toCountry": "Spain",
+              "departureTime": "2026-12-06T14:25:00",
+              "arrivalTime": "2026-12-06T15:30:00",
+              "durationSeconds": 3900,
+              "carrier": "IB",
+              "carrierName": "Iberia Airlines",
+              "flightNumber": "IB1078",
+              "cabinClass": "Economy"
+            },
+            {
+              "from": "MAD",
+              "to": "LIS",
+              "fromCity": "Madrid",
+              "toCity": "Lisbon",
+              "fromName": "Adolfo Suárez Madrid–Barajas",
+              "toName": "Lisbon Portela",
+              "fromCountry": "Spain",
+              "toCountry": "Portugal",
+              "departureTime": "2026-12-06T23:00:00",
+              "arrivalTime": "2026-12-06T23:25:00",
+              "durationSeconds": 5100,
+              "carrier": "IB",
+              "carrierName": "Iberia Airlines",
+              "flightNumber": "IB539",
+              "cabinClass": "Economy"
+            }
+          ]
+        },
+        "inbound": {
+          "from": "LIS",
+          "to": "VLC",
+          "departureTime": "2026-12-10T21:15:00",
+          "arrivalTime": "2026-12-10T23:50:00",
+          "durationSeconds": 5700,
+          "stops": 0,
+          "route": [
+            "LIS",
+            "VLC"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "LIS",
+              "to": "VLC",
+              "fromCity": "Lisbon",
+              "toCity": "Valencia",
+              "fromName": "Lisbon Portela",
+              "toName": "Valencia",
+              "fromCountry": "Portugal",
+              "toCountry": "Spain",
+              "departureTime": "2026-12-10T21:15:00",
+              "arrivalTime": "2026-12-10T23:50:00",
+              "durationSeconds": 5700,
+              "carrier": "FR",
+              "carrierName": "Ryanair",
+              "flightNumber": "FR1768",
+              "cabinClass": "Economy"
+            }
+          ]
+        }
+      },
+      {
+        "id": "152707d8513900006d4f92f3_0|07d8035851390000b7ee4e7c_0|03581527513d00004858bbe7_0",
+        "price": 97,
+        "priceFormatted": "97 EUR",
+        "totalDurationSeconds": 39600,
+        "bookingUrl": "https://kiwi.com/u/bbwj53",
+        "imageId": "lisbon_pt",
+        "baggage": {
+          "personalItem": 1,
+          "cabinBag": 0,
+          "checkedBag": 0
+        },
+        "outbound": {
+          "from": "VLC",
+          "to": "LIS",
+          "departureTime": "2026-12-06T11:40:00",
+          "arrivalTime": "2026-12-06T20:05:00",
+          "durationSeconds": 33900,
+          "stops": 1,
+          "route": [
+            "VLC",
+            "OVD",
+            "LIS"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "VLC",
+              "to": "OVD",
+              "fromCity": "Valencia",
+              "toCity": "Asturias",
+              "fromName": "Valencia",
+              "toName": "Asturias",
+              "fromCountry": "Spain",
+              "toCountry": "Spain",
+              "departureTime": "2026-12-06T11:40:00",
+              "arrivalTime": "2026-12-06T13:10:00",
+              "durationSeconds": 5400,
+              "carrier": "W4",
+              "carrierName": "Wizz Air Malta",
+              "flightNumber": "W47476",
+              "cabinClass": "Economy"
+            },
+            {
+              "from": "OVD",
+              "to": "LIS",
+              "fromCity": "Asturias",
+              "toCity": "Lisbon",
+              "fromName": "Asturias",
+              "toName": "Lisbon Portela",
+              "fromCountry": "Spain",
+              "toCountry": "Portugal",
+              "departureTime": "2026-12-06T19:35:00",
+              "arrivalTime": "2026-12-06T20:05:00",
+              "durationSeconds": 5400,
+              "carrier": "V7",
+              "carrierName": "Volotea",
+              "flightNumber": "V73594",
+              "cabinClass": "Economy"
+            }
+          ]
+        },
+        "inbound": {
+          "from": "LIS",
+          "to": "VLC",
+          "departureTime": "2026-12-10T21:15:00",
+          "arrivalTime": "2026-12-10T23:50:00",
+          "durationSeconds": 5700,
+          "stops": 0,
+          "route": [
+            "LIS",
+            "VLC"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "LIS",
+              "to": "VLC",
+              "fromCity": "Lisbon",
+              "toCity": "Valencia",
+              "fromName": "Lisbon Portela",
+              "toName": "Valencia",
+              "fromCountry": "Portugal",
+              "toCountry": "Spain",
+              "departureTime": "2026-12-10T21:15:00",
+              "arrivalTime": "2026-12-10T23:50:00",
+              "durationSeconds": 5700,
+              "carrier": "FR",
+              "carrierName": "Ryanair",
+              "flightNumber": "FR1768",
+              "cabinClass": "Economy"
+            }
+          ]
+        }
+      },
+      {
+        "id": "1527255851390000218ea0f3_0|2558035851390000fb4db1ae_0|03581527513d00004858bbe7_0",
+        "price": 102,
+        "priceFormatted": "102 EUR",
+        "totalDurationSeconds": 30300,
+        "bookingUrl": "https://kiwi.com/u/zms2vu8",
+        "imageId": "lisbon_pt",
+        "baggage": {
+          "personalItem": 1,
+          "cabinBag": 0,
+          "checkedBag": 0
+        },
+        "outbound": {
+          "from": "VLC",
+          "to": "LIS",
+          "departureTime": "2026-12-06T14:40:00",
+          "arrivalTime": "2026-12-06T20:30:00",
+          "durationSeconds": 24600,
+          "stops": 1,
+          "route": [
+            "VLC",
+            "BGY",
+            "LIS"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "VLC",
+              "to": "BGY",
+              "fromCity": "Valencia",
+              "toCity": "Milan",
+              "fromName": "Valencia",
+              "toName": "Milan Bergamo International Airport",
+              "fromCountry": "Spain",
+              "toCountry": "Italy",
+              "departureTime": "2026-12-06T14:40:00",
+              "arrivalTime": "2026-12-06T16:35:00",
+              "durationSeconds": 6900,
+              "carrier": "FR",
+              "carrierName": "Ryanair",
+              "flightNumber": "FR496",
+              "cabinClass": "Economy"
+            },
+            {
+              "from": "BGY",
+              "to": "LIS",
+              "fromCity": "Milan",
+              "toCity": "Lisbon",
+              "fromName": "Milan Bergamo International Airport",
+              "toName": "Lisbon Portela",
+              "fromCountry": "Italy",
+              "toCountry": "Portugal",
+              "departureTime": "2026-12-06T18:30:00",
+              "arrivalTime": "2026-12-06T20:30:00",
+              "durationSeconds": 10800,
+              "carrier": "FR",
+              "carrierName": "Ryanair",
+              "flightNumber": "FR820",
+              "cabinClass": "Economy"
+            }
+          ]
+        },
+        "inbound": {
+          "from": "LIS",
+          "to": "VLC",
+          "departureTime": "2026-12-10T21:15:00",
+          "arrivalTime": "2026-12-10T23:50:00",
+          "durationSeconds": 5700,
+          "stops": 0,
+          "route": [
+            "LIS",
+            "VLC"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "LIS",
+              "to": "VLC",
+              "fromCity": "Lisbon",
+              "toCity": "Valencia",
+              "fromName": "Lisbon Portela",
+              "toName": "Valencia",
+              "fromCountry": "Portugal",
+              "toCountry": "Spain",
+              "departureTime": "2026-12-10T21:15:00",
+              "arrivalTime": "2026-12-10T23:50:00",
+              "durationSeconds": 5700,
+              "carrier": "FR",
+              "carrierName": "Ryanair",
+              "flightNumber": "FR1768",
+              "cabinClass": "Economy"
+            }
+          ]
+        }
+      },
+      {
+        "id": "152703585139513d2b3c81f7_0|152703585139513d2b3c81f7_1",
+        "price": 129,
+        "priceFormatted": "129 EUR",
+        "totalDurationSeconds": 11700,
+        "bookingUrl": "https://kiwi.com/u/hg67wch",
+        "imageId": "lisbon_pt",
+        "baggage": {
+          "personalItem": 1,
+          "cabinBag": 1,
+          "checkedBag": 0
+        },
+        "outbound": {
+          "from": "VLC",
+          "to": "LIS",
+          "departureTime": "2026-12-06T05:55:00",
+          "arrivalTime": "2026-12-06T06:40:00",
+          "durationSeconds": 6300,
+          "stops": 0,
+          "route": [
+            "VLC",
+            "LIS"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "VLC",
+              "to": "LIS",
+              "fromCity": "Valencia",
+              "toCity": "Lisbon",
+              "fromName": "Valencia",
+              "toName": "Lisbon Portela",
+              "fromCountry": "Spain",
+              "toCountry": "Portugal",
+              "departureTime": "2026-12-06T05:55:00",
+              "arrivalTime": "2026-12-06T06:40:00",
+              "durationSeconds": 6300,
+              "carrier": "TP",
+              "carrierName": "TAP Portugal",
+              "flightNumber": "TP1097",
+              "cabinClass": "Economy"
+            }
+          ]
+        },
+        "inbound": {
+          "from": "LIS",
+          "to": "VLC",
+          "departureTime": "2026-12-10T15:00:00",
+          "arrivalTime": "2026-12-10T17:30:00",
+          "durationSeconds": 5400,
+          "stops": 0,
+          "route": [
+            "LIS",
+            "VLC"
+          ],
+          "cabinClass": "Economy",
+          "segments": [
+            {
+              "from": "LIS",
+              "to": "VLC",
+              "fromCity": "Lisbon",
+              "toCity": "Valencia",
+              "fromName": "Lisbon Portela",
+              "toName": "Valencia",
+              "fromCountry": "Portugal",
+              "toCountry": "Spain",
+              "departureTime": "2026-12-10T15:00:00",
+              "arrivalTime": "2026-12-10T17:30:00",
+              "durationSeconds": 5400,
+              "carrier": "TP",
+              "carrierName": "TAP Portugal",
+              "flightNumber": "TP1094",
+              "cabinClass": "Economy"
+            }
+          ]
+        }
+      }
+    ],
+    "searchTimeMs": 834,
+    "error": null
+  }
+}
