@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { ObservationSchema, type Observation } from "../core/schema";
-import { flightId, flightNo, legKey } from "./sources/id";
+import { flightId, legKey } from "./sources/id";
 import type { Store } from "./store";
 
 /**
@@ -53,18 +53,14 @@ function keyFields(o: Observation): (string | number | undefined)[] {
 
 /**
  * Flights share the id scheme of the collectors (src/server/sources/id.ts): every leg of both
- * directions, with flight number and departure day, so two itineraries on one route and date that
+ * directions, with flight number, airports and local departure minute, so two itineraries on one route and date that
  * differ in a connection, a departure or the return never collide, and the same itinerary seen by
- * a collector and by an agent is one row. A leg without a flight number also contributes its
- * departure time. With no legs at all the id falls back to what identifies an offer: seller, source,
+ * a collector and by an agent is one row. With no legs at all the id falls back to what identifies an offer: seller, source,
  * stops, duration, price currency and the page it books on. The price amount is never part of it,
  * so an exact repeat of the same offer updates the price.
  */
 function flightIdFor(o: Extract<Observation, { kind: "flight" }>): string {
-  const legs = o.legs.map((l) => {
-    const key = legKey({ carrier: l.carrier, number: l.flight_no, from: l.from, to: l.to, departLocal: l.depart_at });
-    return flightNo(l.carrier, l.flight_no) ? key : `${key}T${l.depart_at.slice(11, 16)}`;
-  });
+  const legs = o.legs.map((l) => legKey({ carrier: l.carrier, number: l.flight_no, from: l.from, to: l.to, departLocal: l.depart_at }));
   const extra = o.legs.length > 0 ? [] : [
     `seller:${o.seller ?? ""}`, `source:${o.provenance.source}`, `stops:${o.stops}`, `dur:${o.duration_minutes ?? ""}`,
     `cur:${o.price.currency}`, `book:${o.book_url ?? o.provenance.url ?? ""}`,
