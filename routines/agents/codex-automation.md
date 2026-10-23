@@ -38,6 +38,6 @@ saw it. Never scrape. Do not book, pay, sign in or delete.
 ## Checks
 
 - `codex mcp get rumbo` shows the URL and `bearer_token_env_var = RUMBO_KEY`.
-- `RUMBO_KEY=... codex exec "List the rumbo tools"` names 10 tools.
+- `RUMBO_KEY=... codex exec "List the rumbo tools"` names 13 tools.
 - After a run: `/agents` shows a `codex` or `codex-automation` row.
 - Approval mode `approve` is applied only for the scheduled run; your interactive Codex asks as usual.

@@ -48,7 +48,7 @@ describe("/mcp with a bearer key", () => {
     const body = await ok.json();
     const names = body.result.tools.map((t: { name: string }) => t.name);
     expect(names).toContain("rumbo_agent_brief");
-    expect(names).toHaveLength(10);
+    expect(names).toHaveLength(13);
     for (const t of body.result.tools) expect(t.inputSchema.type).toBe("object");
     const none = await bearer.POST(viaBearer(rpc("tools/list"), null));
     expect(none.status).toBe(401);

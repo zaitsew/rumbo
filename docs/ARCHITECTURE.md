@@ -44,7 +44,7 @@ paid ones stay off until their env flag is set (D2).
 ## Agents
 
 - MCP endpoint `/mcp` (Streamable HTTP, stateless). Tools: `rumbo_feed`, `rumbo_feedback`,
-  `rumbo_profile_get`, `rumbo_profile_update`, `rumbo_plan_start`, `rumbo_plan_get`, `rumbo_watch_list`,
+  `rumbo_profile_get`, `rumbo_profile_update`, `rumbo_plan_start`, `rumbo_plan_get`, `rumbo_plan_choose`, `rumbo_watch_list`,
   `rumbo_watch_add`, `rumbo_agent_brief`, `rumbo_observe`, `rumbo_import_history`, `rumbo_to_loco`.
 - JSON API `/api/v1/*` mirrors the tools; `openapi.json` describes it for GPT actions and Grok.
 - Loco: `rumbo_to_loco` returns the arguments for Loco's `loco_propose`; an agent holding both

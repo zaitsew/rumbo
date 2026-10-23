@@ -4,6 +4,7 @@ import { CopyBlock } from "../../../components/CopyBlock";
 import { KeyReveal } from "../../../components/KeyReveal";
 import { formatStamp } from "../../../components/format";
 import { recentAgentActivity } from "../../../src/server/agents";
+import { TOOLS } from "../../../src/server/mcp/tools";
 import { siteUrl } from "../../../src/server/site";
 import { store } from "../../../src/server/store";
 
@@ -123,6 +124,19 @@ export default async function AgentsPage() {
           label="MCP tools/list"
           text={`curl -s ${base}/mcp \\\n  -H "Authorization: Bearer $RUMBO_KEY" \\\n  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`}
         />
+      </section>
+
+      <section aria-labelledby="tools">
+        <h2 id="tools" className="t-sub">
+          The {TOOLS.length} MCP tools
+        </h2>
+        <ul className="t-caption grid gap-1">
+          {TOOLS.map((t) => (
+            <li key={t.name}>
+              <code>{t.name}</code>: {t.description.split(". ")[0]!.replace(/\.$/, "")}.
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section aria-labelledby="activity">

@@ -1,8 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { parse as parseYaml } from "yaml";
-import { DestinationSchema, norm, planDestinations, type Destination } from "../core/destinations";
+import { norm, planDestinations, type Destination } from "../core/destinations";
 import { linksForPlan } from "../core/links";
 import { daysBetween } from "../core/money";
 import { parsePlanText, type KnownPlace } from "../core/parse";
@@ -19,6 +16,7 @@ import {
   type Provenance,
 } from "../core/schema";
 import { aiEnabled, aiParsePlan, type AiOptions } from "./ai";
+import { loadDestinations } from "./destinations";
 import { sawk } from "./sawk";
 import {
   ALL_SOURCES,
@@ -98,28 +96,6 @@ function context(userId: string, deps: PlanDeps): Ctx {
     ai: deps.ai ?? { env: deps.env },
     timeoutMs: deps.timeoutMs ?? FARE_TIMEOUT_MS,
   };
-}
-
-// --- The destination pool (lane D's src/server/destinations.ts replaces this loader) ---------------------
-
-let pool: { dir: string; list: Destination[] } | undefined;
-
-/** `data/destinations/*.yaml`, validated. A file that does not parse is skipped, not fatal. */
-// next.config.ts copies data/destinations/*.yaml into the standalone output, so tracing need not follow `dir`.
-export function loadDestinations(dir: string = join(/*turbopackIgnore: true*/ process.cwd(), "data", "destinations")): Destination[] {
-  if (pool?.dir === dir) return pool.list;
-  const list: Destination[] = [];
-  try {
-    for (const f of readdirSync(/*turbopackIgnore: true*/ dir).filter((n) => n.endsWith(".yaml")).sort()) {
-      const parsed = DestinationSchema.safeParse(parseYaml(readFileSync(join(/*turbopackIgnore: true*/ dir, f), "utf8")));
-      if (parsed.success) list.push(parsed.data);
-      else console.warn(`[plan] skipping ${f}: ${parsed.error.issues[0]?.message ?? "invalid"}`);
-    }
-  } catch (err) {
-    console.warn("[plan] cannot read the destination pool:", err instanceof Error ? err.message : err);
-  }
-  pool = { dir, list };
-  return list;
 }
 
 // --- Reading the request ---------------------------------------------------------------------------------
@@ -304,13 +280,18 @@ function flightsQuery(origin: string[], destination: string[], window: { from: s
 
 const sameCurrencyFirst = (a: Money, currency: string): number => (a.currency === currency ? 0 : 1);
 
-/** Cheapest fare per candidate, from observations only; a trip must fit inside the request's window. */
-export function cheapestFares(candidates: Pick<DestinationCandidate, "place" | "airports">[], observations: Observation[], r: PlanRequest, currency: string): Map<string, Fare> {
+/**
+ * Cheapest fare per candidate, from observations only; a trip must fit inside the request's window.
+ * `origins` limits the fares to flights leaving from those airports, so a cheap fare from an airport the
+ * owner did not ask for cannot rank a place.
+ */
+export function cheapestFares(candidates: Pick<DestinationCandidate, "place" | "airports">[], observations: Observation[], r: PlanRequest, currency: string, origins?: string[]): Map<string, Fare> {
   const out = new Map<string, Fare>();
   for (const c of candidates) {
     let best: Observation | undefined;
     for (const o of observations) {
       if (o.kind !== "flight") continue;
+      if (origins?.length && !origins.includes(o.origin)) continue;
       const here = c.airports.includes(o.destination) || norm(o.place) === norm(c.place);
       if (!here) continue;
       if (o.return_date && o.return_date > r.window.to) continue;
@@ -364,11 +345,12 @@ export async function startPlan(userId: string, input: StartInput, deps: PlanDep
   let notices: Notice[] = [];
   if (ranked.length && request.needs.includes("flights")) {
     const window = departWindow(request);
-    const queries = ranked.filter((c) => c.airports.length).map((c) => flightsQuery(request.origin ?? profile.home_airports, c.airports, window, request.nights, request, profile));
+    const origins = request.origin?.length ? request.origin : profile.home_airports;
+    const queries = ranked.filter((c) => c.airports.length).map((c) => flightsQuery(origins, c.airports, window, request.nights, request, profile));
     const { observations, notices: n } = await runBudgeted(queries, ctx);
     notices = n;
     if (observations.length) ctx.store.upsertObservations(observations);
-    const fares = cheapestFares(ranked, observations, request, profile.currency);
+    const fares = cheapestFares(ranked, observations, request, profile.currency, origins);
     if (fares.size) {
       // Re-score only these places, now that some have a fare; the rest of the pool has none to compare.
       const subset = ctx.destinations.filter((d) => ranked.some((c) => norm(c.place) === norm(d.place)));

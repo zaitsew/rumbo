@@ -54,12 +54,19 @@ async function collect(userId: string, now: Date, deps: CollectDeps): Promise<Co
   const env = deps.env ?? process.env;
   const sources = deps.sources ?? [...ALL_SOURCES, sawk];
   const ledger = deps.ledger ?? createCallLedger(store.db);
-  // A watch no enabled source can serve is skipped before the batch is cut, so a pile of them cannot
-  // fill the 25 places and starve a runnable watch behind them.
-  const servable = (w: Watch): boolean => {
-    const queries = queriesForWatch(w, profile);
-    return queries.some((q) => sources.some((s) => s.kinds.includes(OBSERVATION_KIND_OF[q.kind]) && s.enabled(env)));
-  };
+  // A watch no source can serve is skipped before the batch is cut, so a pile of them cannot fill the 25
+  // places and starve a runnable watch behind them. "Can serve" means a source that is on, covers the
+  // query's kind and still has room under its daily cap for that query: 25 flight watches waiting on a
+  // capped flight source must not hold every slot while an event watch with a free source never runs.
+  const day = now.toISOString().slice(0, 10);
+  const servable = (w: Watch): boolean =>
+    queriesForWatch(w, profile).some((q) =>
+      sources.some((s) => {
+        if (!s.kinds.includes(OBSERVATION_KIND_OF[q.kind]) || !s.enabled(env)) return false;
+        const n = Math.max(0, s.callsFor?.(q) ?? 1);
+        return ledger.count(s.name, day) + n <= s.dailyCap;
+      }),
+    );
   const due = store
     .listWatches()
     .filter((w) => w.active && isDue(w.every_hours, w.last_run_at, now) && servable(w))

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileSchema } from "../src/core/schema";
 import { toLocoProposal } from "../src/core/loco";
-import { PlanError, archivePlan, choosePlace, cheapestFares, getPlan, listPlans, loadDestinations, MAX_CALLS_PER_STEP, planNotices, startPlan, type PlanDeps } from "../src/server/plan";
+import { PlanError, archivePlan, choosePlace, cheapestFares, getPlan, listPlans, MAX_CALLS_PER_STEP, planNotices, startPlan, type PlanDeps } from "../src/server/plan";
+import { loadDestinations } from "../src/server/destinations";
 import { createStore, openDb, type Db, type Store } from "../src/server/store";
 import { FARE_MINOR, NOW, POOL, fakeActivities, fakeEvents, fakeFlights, fakeSource, fakeStays, memoryLedger } from "./plan-support";
 
@@ -77,6 +78,23 @@ describe("startPlan: from a sentence to ranked candidates with live fares", () =
       expect(c.cheapest_flight).toBeUndefined();
       expect(c.flight_provenance).toBeUndefined();
     }
+  });
+
+  it("ranks candidates by fares from the requested origins only", async () => {
+    const base = fakeFlights("fares-two", {});
+    const twoOrigins = fakeSource({
+      name: "two-origins",
+      kinds: ["flight"],
+      search: async (q, ctx) => {
+        const vlc = await base.search(q, ctx);
+        // A much cheaper fare from Madrid, an airport the profile and the request do not use.
+        const mad = vlc.map((o) => (o.kind === "flight" ? { ...o, id: `${o.id}_mad`, origin: "MAD", price: { amount_minor: 1000, currency: "EUR" } } : o));
+        return [...vlc, ...mad];
+      },
+    });
+    const plan = await startPlan("owner", { text: "5 nights of food and culture in December" }, deps({ sources: [twoOrigins] }));
+    const lisbon = plan.candidates.find((c) => c.place === "Lisbon")!;
+    expect(lisbon.cheapest_flight).toEqual({ amount_minor: FARE_MINOR.LIS, currency: "EUR" });
   });
 
   it("works with every source off: candidates have no fares and the reasons say why", async () => {
@@ -366,6 +384,15 @@ describe("cheapestFares", () => {
       f({ id: "e", price: { amount_minor: 400, currency: "EUR" }, depart_date: "2026-11-20" }), // starts before it
     ], req, "EUR");
     expect(fares.get("Lisbon")?.price).toEqual({ amount_minor: 7000, currency: "EUR" });
+  });
+
+  it("counts only fares from the requested origins", () => {
+    const fares = cheapestFares([{ place: "Lisbon", airports: ["LIS"] }], [
+      f({ id: "a", price: { amount_minor: 9000, currency: "EUR" } }), // VLC
+      f({ id: "b", price: { amount_minor: 3000, currency: "EUR" }, origin: "MAD" }),
+    ], req, "EUR", ["VLC"]);
+    expect(fares.get("Lisbon")?.price).toEqual({ amount_minor: 9000, currency: "EUR" });
+    expect(cheapestFares([{ place: "Lisbon", airports: ["LIS"] }], [f({ id: "b", origin: "MAD" })], req, "EUR", ["VLC"]).size).toBe(0);
   });
 
   it("returns nothing for a place with no matching fare", () => {

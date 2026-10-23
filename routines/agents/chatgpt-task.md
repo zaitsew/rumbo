@@ -11,7 +11,7 @@ Status: unverified. Nothing here has been run. Two facts to confirm first, becau
 
 1. ChatGPT > Settings > Connectors > Advanced > Developer mode on.
 2. Add a connector. Name `Rumbo`. URL: the `/mcp/<key>` address from `/agents` (reveal button). Authentication: none (the key is in the URL, so do not share the chat or screenshots of the setup).
-3. Check that the tools list shows 10 `rumbo_*` tools, including `rumbo_observe`. If writes are blocked, use Option B.
+3. Check that the tools list shows 13 `rumbo_*` tools, including `rumbo_observe`. If writes are blocked, use Option B.
 4. Tasks > New task, daily 07:30, with the prompt below.
 
 ## Option B: custom GPT with an action (works when MCP is read-only)

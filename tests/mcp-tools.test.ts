@@ -1,5 +1,5 @@
 import Ajv2020 from "ajv/dist/2020";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ObservationSchema } from "../src/core/schema";
 import { buildBrief, candidateDates, isDue, observationExamples } from "../src/server/brief";
 import { recentAgentActivity } from "../src/server/agents";
@@ -9,6 +9,13 @@ import { ingestObservations, observationId } from "../src/server/observe";
 import { flightId, legKey } from "../src/server/sources/id";
 import { createStore, openDb, type Db, type Store } from "../src/server/store";
 import { PROFILE, flight, tempDir, watch } from "./helpers";
+
+// The plan tools call the real source list; swap it for fakes so no test reaches a network.
+vi.mock("../src/server/sources", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../src/server/sources")>();
+  const support = await import("./plan-support");
+  return { ...real, ALL_SOURCES: [support.fakeFlights(), support.fakeStays(), support.fakeActivities(), support.fakeEvents()] };
+});
 
 const NOW = new Date("2026-10-23T12:00:00Z");
 let tmp: ReturnType<typeof tempDir>;
@@ -35,10 +42,10 @@ const fresh = (id: string, over: Record<string, unknown> = {}) =>
   flight(id, { provenance: { source: "kiwi-mcp", url: "https://example.com/o", seen_at: "2026-10-23T09:00:00Z", expires_at: "2026-10-26T09:00:00Z" }, ...over });
 
 describe("the registry", () => {
-  it("lists the ten tools with unique names and object input schemas", () => {
+  it("lists the thirteen tools with unique names and object input schemas", () => {
     const names = TOOLS.map((t) => t.name);
     expect(names.sort()).toEqual(
-      ["rumbo_agent_brief", "rumbo_feed", "rumbo_feedback", "rumbo_import_history", "rumbo_observe", "rumbo_profile_get", "rumbo_profile_update", "rumbo_to_loco", "rumbo_watch_add", "rumbo_watch_list"],
+      ["rumbo_agent_brief", "rumbo_feed", "rumbo_feedback", "rumbo_import_history", "rumbo_observe", "rumbo_plan_choose", "rumbo_plan_get", "rumbo_plan_start", "rumbo_profile_get", "rumbo_profile_update", "rumbo_to_loco", "rumbo_watch_add", "rumbo_watch_list"],
     );
     expect(new Set(names).size).toBe(names.length);
     for (const t of TOOLS) expect(t.description.length).toBeGreaterThan(40);
@@ -320,6 +327,87 @@ describe("rumbo_to_loco", () => {
     expect(r.body.loco_propose_args.proposal.options.length).toBeGreaterThan(0);
     expect(s.getPlan("p1")!.status).toBe("ready");
     expect((await call("rumbo_to_loco", { plan_id: "nope" })).body.error).toBe("not_found");
+  });
+});
+
+describe("rumbo_plan_start, rumbo_plan_get and rumbo_plan_choose", () => {
+  const planProfile = () => s.putProfile({ ...PROFILE, home_city: "Valencia", home_airports: ["VLC"], currency: "EUR" });
+
+  it("asks for a profile first and for some input", async () => {
+    const none = await call("rumbo_plan_start", { text: "a week in Lisbon" });
+    expect(none.isError).toBe(true);
+    expect(none.body.error).toBe("no_profile");
+    planProfile();
+    const empty = await call("rumbo_plan_start", {});
+    expect(empty.body.error).toBe("invalid_input");
+    expect((await call("rumbo_plan_start", { text: "   " })).body.error).toBe("invalid_input");
+  });
+
+  it("starts from a sentence, ranks places with fares from the sources, and tells the agent to ask the owner", async () => {
+    planProfile();
+    const r = await call("rumbo_plan_start", { text: "5 nights of food and culture in December" }, "claude-scheduled");
+    expect(r.isError).toBe(false);
+    const plan = r.body.plan;
+    expect(plan.id).toMatch(/^pl_/);
+    expect(plan.status).toBe("choosing");
+    expect(plan.candidates.length).toBeGreaterThan(1);
+    expect(plan.candidates.some((c: any) => c.cheapest_flight?.source === "fake-fares")).toBe(true); // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(plan.source_notices.some((n: any) => n.source === "fake-fares" && n.ok)).toBe(true); // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(r.body.next).toMatch(/Ask the owner/);
+    expect(s.getPlan(plan.id)?.request.text).toBe("5 nights of food and culture in December");
+  });
+
+  it("lets structured fields win over the sentence, and goes straight to a named place", async () => {
+    planProfile();
+    const r = await call("rumbo_plan_start", { text: "a week somewhere", destination: "Lisbon", nights: { min: 3, max: 3 }, window: { from: "2026-12-01", to: "2026-12-10" } });
+    expect(r.isError).toBe(false);
+    expect(r.body.plan.request).toMatchObject({ destination: "Lisbon", nights: { min: 3, max: 3 }, origin: ["VLC"] });
+    expect(r.body.plan.status).toBe("ready");
+    expect(r.body.plan.chosen).toBe("Lisbon");
+    expect(r.body.plan.sections.stay.length).toBeGreaterThan(0);
+    const stay = r.body.plan.sections.stay[0];
+    expect(stay).toMatchObject({ source: "fake-stays", stale: false });
+    expect(stay.price.text).toMatch(/^€/);
+    expect(stay.url).toMatch(/^https:/);
+  });
+
+  it("reads a plan back, lists plans, and answers not_found", async () => {
+    planProfile();
+    const started = await call("rumbo_plan_start", { text: "5 nights of food and culture in December" });
+    const got = await call("rumbo_plan_get", { plan_id: started.body.plan.id });
+    expect(got.isError).toBe(false);
+    expect(got.body.plan).toEqual(started.body.plan);
+    const list = await call("rumbo_plan_get", {});
+    expect(list.body).toMatchObject({ count: 1, plans: [{ id: started.body.plan.id, status: "choosing" }] });
+    expect((await call("rumbo_plan_get", { plan_id: "pl_missing" })).body.error).toBe("not_found");
+  });
+
+  it("chooses a place with the owner's dates, fills the sections, and refuses a half pair of dates", async () => {
+    planProfile();
+    const started = await call("rumbo_plan_start", { text: "5 nights of food and culture in December" });
+    const place = started.body.plan.candidates[0].place as string;
+    expect((await call("rumbo_plan_choose", { plan_id: started.body.plan.id, place, from: "2026-12-05" })).body.error).toBe("invalid_input");
+    const r = await call("rumbo_plan_choose", { plan_id: started.body.plan.id, place, from: "2026-12-05", to: "2026-12-09" });
+    expect(r.isError).toBe(false);
+    expect(r.body.plan).toMatchObject({ status: "ready", chosen: place, dates: { from: "2026-12-05", to: "2026-12-09" } });
+    expect(r.body.plan.sections.stay.length).toBeGreaterThan(0);
+    expect(r.body.plan.links.length).toBeGreaterThan(0);
+    expect(r.body.next).toMatch(/rumbo_to_loco/);
+    // The plan feeds rumbo_to_loco as it is.
+    const loco = await call("rumbo_to_loco", { plan_id: r.body.plan.id, trip_slug: "t" });
+    expect(loco.isError).toBe(false);
+  });
+
+  it("maps planner errors to tool errors: past dates, unknown plan, archived plan", async () => {
+    planProfile();
+    const started = await call("rumbo_plan_start", { text: "5 nights of food and culture in December" });
+    const id = started.body.plan.id as string;
+    expect((await call("rumbo_plan_choose", { plan_id: id, place: "Lisbon", from: "2026-09-01", to: "2026-09-05" })).body).toMatchObject({ error: "bad_request" });
+    expect((await call("rumbo_plan_choose", { plan_id: "pl_missing", place: "Lisbon" })).body.error).toBe("not_found");
+    s.putPlan({ ...s.getPlan(id)!, status: "archived" }, NOW);
+    expect((await call("rumbo_plan_choose", { plan_id: id, place: "Lisbon" })).isError).toBe(true);
+    expect((await call("rumbo_plan_get", {})).body.count).toBe(0);
+    expect((await call("rumbo_plan_get", { include_archived: true })).body.count).toBe(1);
   });
 });
 

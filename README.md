@@ -20,7 +20,15 @@ Without `RUMBO_OWNER_KEY` the server refuses everything, even on localhost: page
 
 ## Status
 
-Alpha. Shell, store, owner key, JSON API, ranking core and source collectors are in. The MCP endpoint, the feed service and the agent setup for Claude, Codex, ChatGPT and Grok are in the `agents` lane. The planner pages and the feed UI come from the plan-feed lane (docs/PLAN.md).
+Alpha, in use by one owner. What is in:
+
+- **Planner** (`/plan`): one sentence or a form (English, Spanish, Russian) becomes ranked places with live fares; choosing a place fills flights, stay, activities and events, with links for the car.
+- **Feed** (`/`): observations ranked by deal, fit, taste, urgency and novelty. Each item shows its price with source and link, the reasons behind the score, an optional AI line marked as AI, like / dislike / hide buttons and filters by kind.
+- **MCP** at `/mcp` with 13 tools (feed, feedback, profile, watches, observations, history, agent brief, plans, Loco hand-off), plus the JSON API and OpenAPI document. None of them books, pays or deletes.
+- **Agents**: install scripts and scheduled-run prompts for Claude, Codex, ChatGPT and Grok (`/agents`, `routines/agents/`).
+- **Collector**: `POST /api/v1/collect` runs every hour from the scheduler container, calls each due watch's sources within their daily caps, and stores the results.
+
+Not in yet: booking (by design, D4) and a rental-car source (car is links only).
 
 ## What is here
 
@@ -58,7 +66,7 @@ The OpenAPI 3.1 document (for GPT actions and Grok) is public at `/openapi.json`
 ## Connect your AI agents
 
 Rumbo speaks MCP (Streamable HTTP, stateless) at `/mcp` with `Authorization: Bearer <key>`, and at `/mcp/<key>` for connectors that cannot set a header.
-Both go through the same lockout and rate limit. Tools: `rumbo_feed`, `rumbo_feedback`, `rumbo_profile_get`, `rumbo_profile_update`, `rumbo_watch_list`, `rumbo_watch_add`, `rumbo_observe`, `rumbo_import_history`, `rumbo_agent_brief`, `rumbo_to_loco`. None deletes, books or pays.
+Both go through the same lockout and rate limit. Tools: `rumbo_feed`, `rumbo_feedback`, `rumbo_profile_get`, `rumbo_profile_update`, `rumbo_watch_list`, `rumbo_watch_add`, `rumbo_observe`, `rumbo_import_history`, `rumbo_agent_brief`, `rumbo_plan_start`, `rumbo_plan_get`, `rumbo_plan_choose`, `rumbo_to_loco` (13 in all). None deletes, books or pays.
 
 ```
 scripts/install-claude.sh --dry-run && scripts/install-claude.sh   # Claude Code: key in Keychain, MCP server, skill
