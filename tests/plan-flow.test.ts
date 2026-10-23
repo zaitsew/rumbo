@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileSchema } from "../src/core/schema";
 import { toLocoProposal } from "../src/core/loco";
-import { PlanError, archivePlan, choosePlace, cheapestFares, getPlan, listPlans, MAX_CALLS_PER_STEP, planNotices, startPlan, type PlanDeps } from "../src/server/plan";
+import { PlanError, archivePlan, choosePlace, cheapestFares, pickDates, getPlan, listPlans, MAX_CALLS_PER_STEP, planNotices, startPlan, type PlanDeps } from "../src/server/plan";
 import { loadDestinations } from "../src/server/destinations";
 import { createStore, openDb, type Db, type Store } from "../src/server/store";
 import { FARE_MINOR, NOW, POOL, fakeActivities, fakeEvents, fakeFlights, fakeSource, fakeStays, memoryLedger } from "./plan-support";
@@ -397,6 +397,32 @@ describe("cheapestFares", () => {
 
   it("returns nothing for a place with no matching fare", () => {
     expect(cheapestFares([{ place: "Rome", airports: ["FCO"] }], [f({ id: "a" })], req, "EUR").size).toBe(0);
+  });
+  it("skips fares that clash with the owner's busy dates", () => {
+    const busy = [{ from: "2026-12-03", to: "2026-12-20" }];
+    const fares = cheapestFares([{ place: "Lisbon", airports: ["LIS"] }], [
+      f({ id: "a", price: { amount_minor: 3000, currency: "EUR" } }), // 1-4 Dec: clashes
+    ], req, "EUR", undefined, busy);
+    expect(fares.size).toBe(0);
+  });
+});
+
+describe("pickDates and busy dates", () => {
+  const plan = { request: { window: { from: "2026-12-01", to: "2026-12-31" }, nights: { min: 3, max: 4 } } } as never;
+  const lisbon = { place: "Lisbon", country: "PT", airports: ["LIS"], score: 1, reasons: [] } as never;
+  const busy = [{ from: "2026-12-05", to: "2027-01-10" }];
+
+  it("never takes a cached fare inside a busy window", () => {
+    const fare = flightObs("a", { depart_date: "2026-12-11", return_date: "2026-12-15" });
+    expect(pickDates(plan, lisbon, [fare], undefined, "EUR", undefined, "2026-10-23", busy)).toEqual({ from: "2026-12-01", to: "2026-12-04" });
+  });
+
+  it("slides the fallback stay to the first free stretch", () => {
+    expect(pickDates(plan, lisbon, [], undefined, "EUR", undefined, "2026-10-23", [{ from: "2026-12-02", to: "2026-12-10" }])).toEqual({ from: "2026-12-11", to: "2026-12-14" });
+  });
+
+  it("says so when every stay in the window clashes", () => {
+    expect(() => pickDates(plan, lisbon, [], undefined, "EUR", undefined, "2026-10-23", [{ from: "2026-11-01", to: "2027-01-31" }])).toThrow(PlanError);
   });
 });
 
