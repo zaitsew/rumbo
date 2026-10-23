@@ -105,12 +105,13 @@ function context(userId: string, deps: PlanDeps): Ctx {
 let pool: { dir: string; list: Destination[] } | undefined;
 
 /** `data/destinations/*.yaml`, validated. A file that does not parse is skipped, not fatal. */
-export function loadDestinations(dir: string = join(process.cwd(), "data", "destinations")): Destination[] {
+// next.config.ts copies data/destinations/*.yaml into the standalone output, so tracing need not follow `dir`.
+export function loadDestinations(dir: string = join(/*turbopackIgnore: true*/ process.cwd(), "data", "destinations")): Destination[] {
   if (pool?.dir === dir) return pool.list;
   const list: Destination[] = [];
   try {
-    for (const f of readdirSync(dir).filter((n) => n.endsWith(".yaml")).sort()) {
-      const parsed = DestinationSchema.safeParse(parseYaml(readFileSync(join(dir, f), "utf8")));
+    for (const f of readdirSync(/*turbopackIgnore: true*/ dir).filter((n) => n.endsWith(".yaml")).sort()) {
+      const parsed = DestinationSchema.safeParse(parseYaml(readFileSync(join(/*turbopackIgnore: true*/ dir, f), "utf8")));
       if (parsed.success) list.push(parsed.data);
       else console.warn(`[plan] skipping ${f}: ${parsed.error.issues[0]?.message ?? "invalid"}`);
     }
