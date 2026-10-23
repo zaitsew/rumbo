@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { ObservationSchema, type Observation } from "../core/schema";
+import { flightId, flightNo, legKey } from "./sources/id";
 import type { Store } from "./store";
 
 /**
@@ -41,7 +42,7 @@ const FUTURE_SLACK_MS = 10 * 60_000;
 function keyFields(o: Observation): (string | number | undefined)[] {
   const base = [o.kind, o.provenance.source, o.place.toLowerCase()];
   switch (o.kind) {
-    case "flight": return [...base, o.origin, o.destination, o.depart_date, o.return_date, o.seller ?? o.legs[0]?.carrier, o.stops];
+    case "flight": return base; // not used: flights go through `flightIdFor`
     case "stay": return [...base, o.name.toLowerCase(), o.check_in, o.check_out];
     case "car": return [...base, o.pickup.toLowerCase(), o.pickup_date, o.dropoff_date];
     case "activity": return [...base, o.title.toLowerCase(), o.date];
@@ -50,7 +51,29 @@ function keyFields(o: Observation): (string | number | undefined)[] {
   }
 }
 
+/**
+ * Flights share the id scheme of the collectors (src/server/sources/id.ts): every leg of both
+ * directions, with flight number and departure day, so two itineraries on one route and date that
+ * differ in a connection, a departure or the return never collide, and the same itinerary seen by
+ * a collector and by an agent is one row. A leg without a flight number also contributes its
+ * departure time. With no legs at all the id falls back to what identifies an offer: seller, source,
+ * stops, duration, price currency and the page it books on. The price amount is never part of it,
+ * so an exact repeat of the same offer updates the price.
+ */
+function flightIdFor(o: Extract<Observation, { kind: "flight" }>): string {
+  const legs = o.legs.map((l) => {
+    const key = legKey({ carrier: l.carrier, number: l.flight_no, from: l.from, to: l.to, departLocal: l.depart_at });
+    return flightNo(l.carrier, l.flight_no) ? key : `${key}T${l.depart_at.slice(11, 16)}`;
+  });
+  const extra = o.legs.length > 0 ? [] : [
+    `seller:${o.seller ?? ""}`, `source:${o.provenance.source}`, `stops:${o.stops}`, `dur:${o.duration_minutes ?? ""}`,
+    `cur:${o.price.currency}`, `book:${o.book_url ?? o.provenance.url ?? ""}`,
+  ];
+  return flightId({ origin: o.origin, destination: o.destination, depart_date: o.depart_date, return_date: o.return_date, legs: [...legs, ...extra] });
+}
+
 export function observationId(o: Observation): string {
+  if (o.kind === "flight") return flightIdFor(o);
   const h = createHash("sha256").update(keyFields(o).map((v) => String(v ?? "")).join("|")).digest("hex").slice(0, 20);
   return `obs_${h}`;
 }

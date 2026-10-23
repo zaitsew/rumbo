@@ -47,11 +47,18 @@ export function defineTool<S extends z.ZodType>(tool: ToolDef<S>): ToolDef<S> {
 
 /** The agent's own name wins, then the one in the request, then a neutral label. */
 export function agentName(given: string | undefined, ctx: ToolContext): string {
-  return (given?.trim() || ctx.agent || "agent").slice(0, 40);
+  const name = (given?.trim() || ctx.agent || "agent").slice(0, 40);
+  if (isReservedAgent(name)) throw new ToolError("reserved_agent", `"${name}" is the owner's name; pick your own agent name (for example claude-scheduled).`);
+  return name;
+}
+
+/** `created_by: "owner"` marks what the owner made. No agent may sign as the owner. */
+export function isReservedAgent(name: string): boolean {
+  return name.trim().toLowerCase() === "owner";
 }
 
 const AGENT_OK = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,39}$/;
 export function cleanAgent(value: string | null | undefined): string | null {
   const v = value?.trim();
-  return v && AGENT_OK.test(v) ? v : null;
+  return v && AGENT_OK.test(v) && !isReservedAgent(v) ? v : null;
 }

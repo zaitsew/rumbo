@@ -5,6 +5,16 @@ import { agentName, defineTool } from "../tool";
 
 export const MAX_OBSERVATIONS = 100;
 
+/** The published shape of one row: ObservationSchema with `id` optional, because the server derives it. */
+export function observationItemSchema(): Record<string, unknown> {
+  const items = z.toJSONSchema(ObservationSchema, { io: "input", unrepresentable: "any" }) as Record<string, unknown>;
+  const variants = (items.oneOf ?? items.anyOf) as Record<string, unknown>[] | undefined;
+  for (const v of variants ?? [items]) {
+    if (Array.isArray(v.required)) v.required = (v.required as string[]).filter((k) => k !== "id");
+  }
+  return items;
+}
+
 export const tool = defineTool({
   name: "rumbo_observe",
   title: "Report what you found",
@@ -21,7 +31,7 @@ export const tool = defineTool({
   inputJsonSchema: (generated) => {
     const props = generated.properties as Record<string, Record<string, unknown>> | undefined;
     if (props?.observations) {
-      props.observations = { ...props.observations, items: z.toJSONSchema(ObservationSchema, { io: "input", unrepresentable: "any" }) };
+      props.observations = { ...props.observations, items: observationItemSchema() };
     }
     return generated;
   },

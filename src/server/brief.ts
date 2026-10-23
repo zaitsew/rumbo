@@ -76,11 +76,12 @@ function pickConnectors(section: Section, have: string[] | undefined): { connect
 
 interface DatePair { depart: string; return: string }
 
-/** Up to three Friday departures inside the watch window that avoid busy days; falls back to the window start. */
+/** Up to three Friday departures inside the watch window that avoid busy days; falls back to the first day left in the window; none when the window is over. */
 export function candidateDates(watch: Watch, profile: Profile | null, now: Date): DatePair[] {
   const nights = Math.max(1, watch.nights?.min ?? 3);
   const today = msToDay(now.getTime());
   const from = watch.window.from > today ? watch.window.from : msToDay(dayMs(today) + 86_400_000);
+  if (from > watch.window.to) return []; // nothing left inside the window
   const busy = profile?.busy ?? [];
   const free = profile?.free_windows ?? [];
   const out: DatePair[] = [];
@@ -104,9 +105,14 @@ export function candidateDates(watch: Watch, profile: Profile | null, now: Date)
 
 // --- due watches ----------------------------------------------------------------------------------
 
+/** The earliest departure a search looks for is tomorrow. A watch whose window ends before that has nothing left to search. */
+export function isExpired(w: Watch, now: Date): boolean {
+  return w.window.to < msToDay(dayMs(msToDay(now.getTime())) + 86_400_000);
+}
+
 export function isDue(w: Watch, now: Date): boolean {
   if (!w.active) return false;
-  if (w.window.to < msToDay(now.getTime())) return false;
+  if (isExpired(w, now)) return false;
   if (!w.last_run_at) return true;
   return now.getTime() - Date.parse(w.last_run_at) >= w.every_hours * HOUR;
 }
@@ -342,6 +348,9 @@ export function buildBrief(store: Store, opts: BriefOptions) {
     due_watches: due.slice(0, MAX_WATCHES_PER_BRIEF).map((w) => briefForWatch(w, profile, opts.connectors, now)),
     more_due: Math.max(0, due.length - MAX_WATCHES_PER_BRIEF),
     watches_not_due: watches.length - due.length,
+    expired_watches: watches
+      .filter((w) => w.active && isExpired(w, now))
+      .map((w) => ({ watch_id: w.id, label: w.label, window_to: w.window.to, note: "Expired: its window has no day left to search. Skip it; the owner can extend or remove it." })),
     also_consider: profile
       ? {
           note: "Optional, after the watches. Post an `idea` (no price) when one of these deserves a look.",

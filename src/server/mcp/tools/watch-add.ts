@@ -13,15 +13,17 @@ export const tool = defineTool({
     "It is marked as created by you, and the owner can switch it off or delete it. Add one only when the owner asked for it or it is plainly implied by what they told you; " +
     "you cannot replace a watch the owner made.",
   inputSchema: WatchSchema.omit({ created_by: true, last_run_at: true }).extend({
-    id: z.string().min(1).max(60).optional().describe("Leave out to get a new id."),
+    id: z.string().min(1).max(60).optional().describe("Only to update a watch you created. Leave out to create a new one."),
     agent: z.string().max(40).optional().describe("Your agent name."),
   }),
   handler: (args, ctx) => {
     const agent = agentName(args.agent, ctx);
     const { agent: _agent, ...fields } = args;
+    // New watches get a server-generated id. An id may only name a watch this same agent created.
     const existing = fields.id ? ctx.store.getWatch(fields.id) : null;
+    if (fields.id && !existing) throw new ToolError("not_found", `No watch ${fields.id}. Leave out id to create a new watch; the server picks the id.`);
     if (existing && existing.created_by !== agent) {
-      throw new ToolError("not_yours", `Watch ${existing.id} was created by ${existing.created_by}. Agents do not change other people's watches.`);
+      throw new ToolError("not_yours", `Watch ${existing.id} was created by ${existing.created_by}. Agents change only their own watches.`);
     }
     if (!existing && ctx.store.listWatches().length >= MAX_WATCHES) {
       throw new ToolError("too_many_watches", `There are already ${MAX_WATCHES} watches. Ask the owner to remove some.`);

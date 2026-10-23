@@ -1,10 +1,12 @@
+import Ajv2020 from "ajv/dist/2020";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ObservationSchema } from "../src/core/schema";
 import { buildBrief, candidateDates, isDue, observationExamples } from "../src/server/brief";
 import { recentAgentActivity } from "../src/server/agents";
-import { runTool } from "../src/server/mcp/server";
+import { listedTools, runTool } from "../src/server/mcp/server";
 import { TOOLS, toolByName } from "../src/server/mcp/tools";
 import { ingestObservations, observationId } from "../src/server/observe";
+import { flightId, legKey } from "../src/server/sources/id";
 import { createStore, openDb, type Db, type Store } from "../src/server/store";
 import { PROFILE, flight, tempDir, watch } from "./helpers";
 
@@ -179,7 +181,7 @@ describe("rumbo_observe", () => {
     expect(r.body.rejected[2].error).toMatch(/future/);
     const stored = s.listObservations({ includeStale: true });
     expect(stored).toHaveLength(1);
-    expect(stored[0]!.id).toMatch(/^obs_[0-9a-f]{20}$/);
+    expect(stored[0]!.id).toMatch(/^fli_[0-9a-f]{24}$/);
     expect(stored[0]!.provenance.agent).toBe("claude-scheduled");
   });
 
@@ -333,5 +335,114 @@ describe("agent activity", () => {
   it("keeps the id stable across calls", () => {
     const o = ObservationSchema.parse(fresh("x"));
     expect(observationId(o)).toBe(observationId({ ...o, title: "another title" }));
+  });
+});
+
+// --- review round: ids, ownership, published schema, expired watches ---------------------------------
+
+const leg = (from: string, to: string, no: string, dep: string) => ({ from, to, carrier: no.slice(0, 2), flight_no: no, depart_at: dep, arrive_at: dep.replace("T08", "T10") });
+
+describe("flight ids from agents", () => {
+  const post = (rows: unknown[]) => ingestObservations(s, rows, { agent: "claude-scheduled", now: NOW });
+
+  it("keeps two itineraries on one route, date, seller and stop count apart, and updates only an exact repeat", () => {
+    const a = fresh("x", { id: undefined, seller: "Kiwi.com", legs: [leg("VLC", "LIS", "TP1097", "2026-12-06T08:00:00+01:00")] });
+    const b = fresh("x", { id: undefined, seller: "Kiwi.com", legs: [leg("VLC", "LIS", "TP1099", "2026-12-06T18:00:00+01:00")] });
+    const r1 = post([a, b]);
+    expect(r1).toMatchObject({ inserted: 2, rejected: [] });
+    expect(s.listStoredObservations({ limit: 10, includeStale: true })).toHaveLength(2);
+    // The same itinerary again, cheaper: one row, updated.
+    const r2 = post([{ ...a, price: { amount_minor: 7000, currency: "EUR" }, provenance: { ...(a as any).provenance, seen_at: "2026-10-23T11:00:00Z" } }]); // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(r2).toMatchObject({ inserted: 0, updated: 1 });
+    expect(s.listStoredObservations({ limit: 10, includeStale: true })).toHaveLength(2);
+  });
+
+  it("uses the collectors' id for the same legs, so a collector and an agent meet on one row", () => {
+    const legs = [leg("VLC", "LIS", "TP1097", "2026-12-06T08:00:00+01:00")];
+    const o = ObservationSchema.parse(fresh("x", { legs }));
+    expect(observationId(o)).toBe(flightId({
+      origin: "VLC", destination: "LIS", depart_date: "2026-12-06", return_date: "2026-12-09",
+      legs: [legKey({ carrier: "TP", number: "TP1097", from: "VLC", to: "LIS", departLocal: "2026-12-06T08:00:00+01:00" })],
+    }));
+  });
+
+  it("tells legless offers apart by seller and book page, and a leg without a number by its departure time", () => {
+    const base = { id: undefined, legs: [] as unknown[] };
+    const rows = [
+      fresh("x", { ...base, seller: "Ryanair (direct)" }),
+      fresh("x", { ...base, seller: "Kiwi.com" }),
+      fresh("x", { ...base, seller: "Kiwi.com", book_url: "https://example.com/other" }),
+      fresh("x", { ...base, price: { amount_minor: 8900, currency: "GBP" } }),
+    ];
+    expect(post(rows)).toMatchObject({ inserted: 4, rejected: [] });
+    const noNo = (t: string) => fresh("x", { id: undefined, legs: [{ from: "VLC", to: "LIS", carrier: "Vueling", depart_at: t, arrive_at: t }] });
+    const ids = [noNo("2026-12-06T08:00:00+01:00"), noNo("2026-12-06T18:00:00+01:00")].map((r) => observationId(ObservationSchema.parse({ ...r, id: "p" })));
+    expect(new Set(ids).size).toBe(2);
+  });
+});
+
+describe("rumbo_watch_add ownership", () => {
+  const win = { from: "2026-12-01", to: "2026-12-31" };
+
+  it("refuses the owner's name from any agent, in the argument and in the request", async () => {
+    s.upsertWatch(watch("mine", { created_by: "owner", label: "owner's" }));
+    for (const agent of ["owner", "Owner", " OWNER "]) {
+      const r = await call("rumbo_watch_add", { id: "mine", kind: "route", label: "taken over", window: win, agent });
+      expect(r.body.error).toBe("reserved_agent");
+    }
+    expect((await call("rumbo_watch_add", { kind: "route", label: "x", window: win }, "owner")).body.error).toBe("reserved_agent");
+    expect(s.getWatch("mine")).toMatchObject({ created_by: "owner", label: "owner's" });
+    expect(s.listWatches()).toHaveLength(1);
+  });
+
+  it("creates only with a server-generated id and updates only its own watches", async () => {
+    const made = await call("rumbo_watch_add", { kind: "route", label: "mine", window: win, agent: "grok-task" });
+    const id = made.body.watch.id as string;
+    expect((await call("rumbo_watch_add", { id: "chosen-by-agent", kind: "route", label: "x", window: win, agent: "grok-task" })).body.error).toBe("not_found");
+    const own = await call("rumbo_watch_add", { id, kind: "route", label: "renamed", window: win, agent: "grok-task" });
+    expect(own.body).toMatchObject({ created: false, watch: { label: "renamed", created_by: "grok-task" } });
+    expect((await call("rumbo_watch_add", { id, kind: "route", label: "stolen", window: win, agent: "codex-automation" })).body.error).toBe("not_yours");
+    expect(s.getWatch(id)!.label).toBe("renamed");
+  });
+});
+
+describe("the published rumbo_observe schema", () => {
+  it("accepts every example of the brief, which carry no id", () => {
+    const tool = listedTools().find((t) => t.name === "rumbo_observe")!;
+    const schema = (tool.inputSchema as unknown as { properties: { observations: { items: unknown } } }).properties.observations.items;
+    const ajv = new Ajv2020({ strict: false, validateFormats: false });
+    const validate = ajv.compile(schema as object);
+    const examples = Object.entries(observationExamples(NOW));
+    expect(examples).toHaveLength(6);
+    for (const [kind, row] of examples) {
+      expect((row as Record<string, unknown>).id, kind).toBeUndefined();
+      expect(validate(row), `${kind}: ${ajv.errorsText(validate.errors)}`).toBe(true);
+    }
+    // The schema still insists on the rest: a row without a title is refused.
+    expect(validate({ ...(examples[0]![1] as object), title: undefined })).toBe(false);
+  });
+});
+
+describe("watches whose window is over", () => {
+  it("clamps dates to the window, and a watch with no day left is expired, not due", async () => {
+    const today = "2026-10-23";
+    const ends = watch("ends", { window: { from: "2026-10-01", to: today } });
+    expect(candidateDates(ends, null, NOW)).toEqual([]);
+    expect(isDue(ends, NOW)).toBe(false);
+    const tomorrow = watch("tomorrow", { window: { from: "2026-10-01", to: "2026-10-24" } });
+    expect(candidateDates(tomorrow, null, NOW).every((p) => p.depart >= "2026-10-24" && p.depart <= "2026-10-24")).toBe(true);
+    expect(isDue(tomorrow, NOW)).toBe(true);
+    // Every day busy: the fallback is still a day inside the window.
+    const profile = s.putProfile({ ...PROFILE, busy: [{ from: "2026-10-20", to: "2026-12-31" }] });
+    const fb = candidateDates(watch("busy", { window: { from: "2026-10-01", to: "2026-11-10" } }), profile, NOW);
+    expect(fb).toHaveLength(1);
+    expect(fb[0]!.depart >= "2026-10-24" && fb[0]!.depart <= "2026-11-10").toBe(true);
+
+    s.upsertWatch(ends);
+    s.upsertWatch(watch("live"));
+    const brief = (await call("rumbo_agent_brief", { agent: "claude-scheduled" })).body;
+    expect(brief.due_watches.map((w: any) => w.watch_id)).toEqual(["live"]); // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(brief.expired_watches).toEqual([expect.objectContaining({ watch_id: "ends", window_to: today })]);
+    expect(brief.expired_watches[0].note).toMatch(/expired/i);
   });
 });
