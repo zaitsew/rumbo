@@ -90,20 +90,26 @@ export function tagAffinity(values: number[]): number {
   return Math.max(-2, Math.min(2, 0.5 * max + 0.3 * mean + 0.2 * min));
 }
 
-/** Hours to the destination from the best home airport, or null when the pool has no estimate. */
+/**
+ * Airports that stand in for a listed hub because they are near it (same metro area or about an hour or
+ * two by road). Anything else is unknown, and an unknown origin is never given another airport's hours.
+ */
+const NEAR_HUB: Record<string, (typeof HOME_HUBS)[number]> = { ALC: "VLC", CDT: "VLC", GRO: "BCN", REU: "BCN" };
+
+/**
+ * Hours to the destination from the best home airport, or null when the pool has no estimate for any of
+ * them. Listed hubs use their own number; ALC, CDT, GRO and REU borrow their near hub's; an origin outside
+ * those yields nothing, so reachability stays unknown (no penalty, no reason).
+ */
 export function hoursFromHome(d: Destination, homeAirports: string[]): { hours: number; from: string } | null {
+  const table = d.flight_hours_from as Record<string, number | undefined>;
   let best: { hours: number; from: string } | null = null;
   for (const a of homeAirports) {
-    const h = (d.flight_hours_from as Record<string, number | undefined>)[a];
-    if (h !== undefined && (!best || h < best.hours)) best = { hours: h, from: a };
+    const hub = (HOME_HUBS as readonly string[]).includes(a) ? a : NEAR_HUB[a];
+    const h = hub ? table[hub] : undefined;
+    if (hub && h !== undefined && (!best || h < best.hours)) best = { hours: h, from: hub };
   }
-  if (best) return best;
-  // Home airport the pool does not list (ALC): Valencia is the nearest listed hub; else any listed one.
-  for (const p of HOME_HUBS) {
-    const h = (d.flight_hours_from as Record<string, number | undefined>)[p];
-    if (h !== undefined) return { hours: h, from: p };
-  }
-  return null;
+  return best;
 }
 
 type Fare = { price: Money; provenance: Provenance };

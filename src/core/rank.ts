@@ -111,10 +111,22 @@ function isStale(o: Observation, now: Date): boolean {
 
 // --- dedupe ---------------------------------------------------------------------------------------
 
+/**
+ * What makes two flight observations the same flight: the same legs (flight number or carrier, route and
+ * departure instant). Without legs the only facts to compare are the number of stops, so a direct flight
+ * and a connecting one are never merged.
+ */
+function flightSignature(o: Extract<Observation, { kind: "flight" }>): string {
+  if (o.legs.length === 0) return `stops${o.stops}`;
+  return o.legs
+    .map((l) => `${norm(l.flight_no ?? l.carrier).replace(/\s+/g, "")}:${l.from}-${l.to}@${Date.parse(l.depart_at)}`)
+    .join(">");
+}
+
 function dedupeKey(o: Observation): string {
   const place = norm(o.place);
   switch (o.kind) {
-    case "flight": return `flight|${o.origin}|${o.destination}|${o.depart_date}|${o.return_date ?? ""}`;
+    case "flight": return `flight|${o.origin}|${o.destination}|${o.depart_date}|${o.return_date ?? ""}|${flightSignature(o)}`;
     case "stay": return `stay|${place}|${norm(o.name)}|${o.check_in}|${o.check_out}`;
     case "car": return `car|${place}|${norm(o.pickup)}|${o.pickup_date}|${o.dropoff_date}`;
     case "activity": return `activity|${place}|${norm(o.title)}|${o.date ?? ""}`;
@@ -155,7 +167,9 @@ interface Baseline { amount_minor: number; label: string }
 function flightBaseline(o: Extract<Observation, { kind: "flight" }>, pool: Observation[]): Baseline | null {
   const others = pool.filter(
     (x): x is Extract<Observation, { kind: "flight" }> =>
-      x.kind === "flight" && x.id !== o.id && x.price.currency === o.price.currency && dedupeKey(x) !== dedupeKey(o),
+      x.kind === "flight" && x.id !== o.id && x.price.currency === o.price.currency && dedupeKey(x) !== dedupeKey(o) &&
+      // A one-way fare and a round-trip fare are different products: never compare across.
+      Boolean(x.return_date) === Boolean(o.return_date),
   );
   const route = others.filter((x) => x.origin === o.origin && x.destination === o.destination);
   const month = o.depart_date.slice(0, 7);
@@ -186,7 +200,8 @@ function placeBaseline(o: Observation, pool: Observation[], unitPrice: (x: Obser
 // --- per-part scoring -----------------------------------------------------------------------------
 
 /** price/baseline -> 0..1: equal = 0.5, 20% under or better = 1, 20% over or worse = 0. */
-const ratioScore = (price: number, baseline: number): number => clamp01(0.5 + (1 - price / baseline) * 2.5);
+const ratioScore = (price: number, baseline: number): number =>
+  baseline > 0 ? clamp01(0.5 + (1 - price / baseline) * 2.5) : TUNING.neutralDeal;
 
 interface Scored { value: number; reasons: string[] }
 
@@ -200,7 +215,7 @@ function scoreDeal(o: Observation, stale: boolean, pool: Observation[], ctx: Ran
 
   if (o.kind === "flight") {
     const b = flightBaseline(o, pool);
-    if (b) {
+    if (b && b.amount_minor > 0) {
       value = ratioScore(price.amount_minor, b.amount_minor);
       const saving = b.amount_minor - price.amount_minor;
       if (saving > 0 && price.amount_minor <= b.amount_minor * 0.95) {
@@ -212,7 +227,7 @@ function scoreDeal(o: Observation, stale: boolean, pool: Observation[], ctx: Ran
     const perNight = Math.round(o.price_total.amount_minor / nights);
     const parts: number[] = [];
     const cap = ctx.profile.budget.night_max;
-    if (cap && cap.currency === price.currency) {
+    if (cap && cap.amount_minor > 0 && cap.currency === price.currency) {
       // 60% of the cap or less = 1, the cap = 0.6, 130% or more = 0.
       const r = perNight / cap.amount_minor;
       parts.push(clamp01(r <= 0.6 ? 1 : r <= 1 ? 1 - ((r - 0.6) / 0.4) * 0.4 : 0.6 - ((r - 1) / 0.3) * 0.6));
@@ -221,7 +236,7 @@ function scoreDeal(o: Observation, stale: boolean, pool: Observation[], ctx: Ran
       }
     }
     const b = placeBaseline(o, pool, (x) => (x.kind === "stay" ? Math.round(x.price_total.amount_minor / nightsOf(x)) : null), price.currency);
-    if (b) {
+    if (b && b.amount_minor > 0) {
       parts.push(ratioScore(perNight, b.amount_minor));
       const saving = b.amount_minor - perNight;
       if (saving > 0 && perNight <= b.amount_minor * 0.95) {
@@ -233,7 +248,7 @@ function scoreDeal(o: Observation, stale: boolean, pool: Observation[], ctx: Ran
     const days = Math.max(1, daysBetween(o.pickup_date, o.dropoff_date));
     const perDay = Math.round(price.amount_minor / days);
     const b = placeBaseline(o, pool, (x) => (x.kind === "car" && x.price_total ? Math.round(x.price_total.amount_minor / Math.max(1, daysBetween(x.pickup_date, x.dropoff_date))) : null), price.currency);
-    if (b) {
+    if (b && b.amount_minor > 0) {
       value = ratioScore(perDay, b.amount_minor);
       const saving = b.amount_minor - perDay;
       if (saving > 0 && perDay <= b.amount_minor * 0.95) {
@@ -242,7 +257,7 @@ function scoreDeal(o: Observation, stale: boolean, pool: Observation[], ctx: Ran
     }
   } else if (o.kind === "activity") {
     const b = placeBaseline(o, pool, (x) => (x.kind === "activity" ? x.price?.amount_minor ?? null : null), price.currency);
-    if (b) {
+    if (b && b.amount_minor > 0) {
       value = ratioScore(price.amount_minor, b.amount_minor);
       const saving = b.amount_minor - price.amount_minor;
       if (saving > 0 && price.amount_minor <= b.amount_minor * 0.95) {
@@ -371,7 +386,7 @@ function scoreFit(o: Observation, ctx: RankContext): Scored {
     else reasons.push(`${o.stops} stops, over your limit of ${profile.flight.max_stops}`);
 
     const cap = profile.budget.flight_max;
-    if (cap && cap.currency === o.price.currency) {
+    if (cap && cap.amount_minor > 0 && cap.currency === o.price.currency) {
       const ratio = o.price.amount_minor / cap.amount_minor;
       comps.push({ w: 2, v: ratio <= 1 ? 1 : clamp01(1 - (ratio - 1) / 0.5) });
       if (ratio <= 1) reasons.push(`within your ${formatMoney(cap)} flight budget`);

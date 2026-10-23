@@ -153,6 +153,74 @@ describe("dedupe", () => {
   });
 });
 
+describe("review fixes", () => {
+  const leg = (no: string, depart: string, arrive = "2026-12-06T09:00:00+01:00") => ({
+    from: "VLC", to: "LIS", depart_at: depart, arrive_at: arrive, carrier: "Vueling", flight_no: no,
+  });
+
+  it("keeps a direct and a connecting flight on the same route and dates apart", () => {
+    const connecting = flight("conn", 5000, { stops: 1, duration_minutes: 420 });
+    const direct = flight("direct", 9000, { stops: 0 });
+    const strict = ProfileSchema.parse({ ...profile, flight: { ...profile.flight, max_stops: 0 } });
+    const items = rank([connecting, direct], ctx({ profile: strict }));
+    expect(items).toHaveLength(2);
+    expect(item(items, "direct")!.parts.fit).toBeGreaterThan(item(items, "conn")!.parts.fit);
+  });
+
+  it("merges the same flight from two sources, but not different flight numbers or times", () => {
+    const a = flight("a", 9000, { legs: [leg("VY1234", "2026-12-06T07:10:00+01:00")] });
+    const same = flight("b", 8500, { legs: [leg("VY 1234", "2026-12-06T06:10:00Z")], provenance: { source: "travelpayouts", seen_at: FRESH } });
+    expect(rank([a, same], ctx())).toHaveLength(1);
+    expect(rank([a, same], ctx())[0]!.observation.id).toBe("b");
+    const later = flight("c", 8000, { legs: [leg("VY1236", "2026-12-06T18:30:00+01:00")] });
+    expect(rank([a, later], ctx())).toHaveLength(2);
+  });
+
+  it("never compares a one-way price with round-trip prices", () => {
+    const oneWay = (id: string, price: number, day: string) =>
+      flight(id, price, { depart_date: day, return_date: undefined });
+    const oneWays = [oneWay("o1", 4000, "2026-12-01"), oneWay("o2", 4000, "2026-12-12"), oneWay("o3", 4000, "2026-12-26")];
+    // The round trip (8200) is compared with the round trips (12000), not dragged by the cheap one-ways.
+    const rt = item(rank([flight("rt", 8200), ...usual, ...oneWays], ctx()), "rt")!;
+    expect(rt.reasons).toContain("€38 under the usual VLC–LIS fare");
+    // A one-way with only round-trip history has no baseline.
+    const lone = item(rank([oneWay("lone", 3000, "2026-12-07"), ...usual], ctx()), "lone")!;
+    expect(lone.parts.deal).toBe(0.4);
+    expect(lone.reasons.join(" ")).not.toMatch(/usual/);
+  });
+
+  it("stays neutral on a zero baseline and keeps every score finite within 0..1", () => {
+    const activity = (id: string, day: string, amount: number): Observation => ({
+      kind: "activity", id, title: id, place: "Lisbon", tags: [], date: day, price: { amount_minor: amount, currency: "EUR" },
+      provenance: { source: "viator", seen_at: FRESH },
+    });
+    const free = (id: string, day: string) => activity(id, day, 0);
+    const paid = activity("paid", "2026-12-08", 2000);
+    const freeFlights = [withDates("z1", 0, "2026-12-01", "2026-12-04"), withDates("z2", 0, "2026-12-12", "2026-12-15"), withDates("z3", 0, "2026-12-26", "2026-12-29"), flight("z4", 0)];
+    const zeroCap = ProfileSchema.parse({ ...profile, budget: { flight_max: { amount_minor: 0, currency: "EUR" }, night_max: { amount_minor: 0, currency: "EUR" } } });
+    const stay = (id: string, total: number): Observation => ({
+      kind: "stay", id, title: id, place: "Lisbon", tags: [], name: id, provenance: { source: "b", seen_at: FRESH },
+      check_in: "2026-12-06", check_out: "2026-12-09", price_total: { amount_minor: total, currency: "EUR" },
+    });
+    const inputs = [free("f1", "2026-12-06"), free("f2", "2026-12-07"), free("f3", "2026-12-09"), paid, ...freeFlights, stay("s0", 0), stay("s0b", 0), stay("s1", 9000)];
+    for (const p of [profile, zeroCap]) {
+      const items = rank(inputs, ctx({ profile: p }));
+      expect(items.length).toBeGreaterThan(5);
+      for (const i of items) {
+        for (const v of [i.score, ...Object.values(i.parts)]) {
+          expect(Number.isFinite(v), `${i.observation.id}`).toBe(true);
+          expect(v).toBeGreaterThanOrEqual(0);
+          expect(v).toBeLessThanOrEqual(1);
+        }
+        expect(i.reasons.join(" ")).not.toMatch(/NaN|Infinity/);
+      }
+    }
+    const f1 = item(rank(inputs, ctx()), "f1")!;
+    expect(f1.parts.deal).toBe(0.4);
+    expect(f1.reasons.join(" ")).not.toMatch(/under the usual/);
+  });
+});
+
 describe("feedback", () => {
   it("excludes dismissed and booked observations", () => {
     const fb: RankFeedback[] = [

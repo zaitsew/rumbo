@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
-import { DestinationSchema, planDestinations, type Destination } from "../src/core/destinations";
+import { DestinationSchema, hoursFromHome, planDestinations, type Destination } from "../src/core/destinations";
 import { DestinationCandidateSchema, PlanRequestSchema, ProfileSchema, type PastTrip } from "../src/core/schema";
 
 const DIR = join(__dirname, "..", "data", "destinations");
@@ -132,5 +132,27 @@ describe("planDestinations", () => {
       const m = r.match(/^about ([\d.]+) h from/);
       if (m) expect(allowed.has(m[1]!), r).toBe(true);
     }
+  });
+});
+
+describe("origins without data", () => {
+  const tokyo = pool.find((d) => d.place === "Tokyo")!;
+  const lisbon = pool.find((d) => d.place === "Lisbon")!;
+
+  it("borrows hours only for the listed hubs and their near airports", () => {
+    expect(hoursFromHome(lisbon, ["VLC"])).toEqual({ hours: lisbon.flight_hours_from.VLC, from: "VLC" });
+    expect(hoursFromHome(lisbon, ["ALC"])).toEqual({ hours: lisbon.flight_hours_from.VLC, from: "VLC" });
+    expect(hoursFromHome(lisbon, ["MAD", "VLC"])!.hours).toBe(Math.min(lisbon.flight_hours_from.MAD!, lisbon.flight_hours_from.VLC!));
+    expect(hoursFromHome(lisbon, ["LHR"])).toBeNull();
+    expect(hoursFromHome(lisbon, ["LHR", "JFK"])).toBeNull();
+  });
+
+  it("treats reachability as unknown for an unknown origin: no penalty, no reason, nothing excluded", () => {
+    const r = req({ origin: ["LHR"] });
+    const out = planDestinations(r, profile, [], pool);
+    expect(out.find((c) => c.place === "Tokyo")).toBeDefined(); // not dropped for being far from VLC
+    expect(tokyo).toBeDefined();
+    for (const c of out) expect(c.reasons.some((x) => x.startsWith("about ")), c.place).toBe(false);
+    expect(out).toHaveLength(pool.length);
   });
 });
