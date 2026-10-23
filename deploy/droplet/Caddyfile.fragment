@@ -6,6 +6,9 @@
 {{name}}.{{domain}} {
 	import common
 
+	# /mcp/<key> carries the owner key in the path. Do not add a `log` directive here; if you must,
+	# filter the path (`log { format filter { request>uri delete } }`) so the key never reaches a log file.
+
 	# Hashed build output: the file name changes whenever the content does.
 	@static path /_next/static/*
 	header @static Cache-Control "public, max-age=31536000, immutable"

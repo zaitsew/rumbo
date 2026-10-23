@@ -18,6 +18,9 @@ export function flightNo(carrierCode: string | undefined, number: string | undef
   const n = (number ?? "").replace(/\s+/g, "").toUpperCase();
   const c = (carrierCode ?? "").replace(/\s+/g, "").toUpperCase();
   if (!n) return "";
+  // "TP1097" already carries its IATA designator: keep it whatever the carrier field says
+  // ("TP" from a collector, "TAP Air Portugal" from an agent), so both land on one id.
+  if (/^[A-Z0-9]{2}\d{1,4}[A-Z]?$/.test(n) && /^[A-Z]/.test(n)) return n;
   return n.startsWith(c) ? n : `${c}${n}`;
 }
 
@@ -36,8 +39,10 @@ export function observationId(kind: ObservationKind, ...parts: (string | number 
  * departure day. `departLocal` is the provider's own string, e.g. "2026-12-06T05:55:00".
  */
 export function legKey(leg: { carrier?: string; number?: string; from: string; to: string; departLocal: string }): string {
+  // Airports and the local departure minute are always part of the key: two itineraries with the same
+  // flight numbers and day but other times or connections never collide.
   const no = flightNo(leg.carrier, leg.number);
-  return `${no || `${leg.from}-${leg.to}`}@${leg.departLocal.slice(0, 10)}`;
+  return `${no}:${leg.from}-${leg.to}@${leg.departLocal.slice(0, 16)}`;
 }
 
 /**
