@@ -2,7 +2,7 @@ runs/
 !runs/.gitkeep
 .env
 .venv/
-node_modules/
+node_modules
 build/
 dist/
 *.log

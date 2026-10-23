@@ -1,0 +1,419 @@
+@import "tailwindcss";
+
+/*
+ * Rumbo design tokens. Calm and readable: one accent (sea teal), light by default, dark by
+ * prefers-color-scheme. Components use these names only.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --text-title: 1.5rem;
+  --text-body: 1rem;
+  --text-caption: 0.8125rem;
+  --r-sm: 0.5rem;
+  --r-md: 0.75rem;
+  --r-pill: 62.5rem;
+
+  --bg: #f7f8f7;
+  --surface: #ffffff;
+  --surface-2: #eef1ef;
+  --line: #dde2df;
+  --line-strong: #b4bcb7;
+  --field-line: #7d8782;
+  --text: #14201c;
+  --text-2: #55625c;
+  --accent: #0f766e;
+  --accent-ink: #ffffff;
+  --accent-soft: #d9efec;
+  --ring: #0f766e;
+  --good: #11713f;
+  --warn: #8a5a05;
+  --danger: #b4261b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1412;
+    --surface: #141d1a;
+    --surface-2: #1b2622;
+    --line: #26332e;
+    --line-strong: #3e4f48;
+    --field-line: #6f7f78;
+    --text: #eaf1ee;
+    --text-2: #9fb0a8;
+    --accent: #3cc4b6;
+    --accent-ink: #04201c;
+    --accent-soft: #123631;
+    --ring: #3cc4b6;
+    --good: #5fd699;
+    --warn: #f0b45a;
+    --danger: #ff8f84;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--text);
+  --color-muted: var(--text-2);
+  --color-accent: var(--accent);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+}
+
+/* --- Base ---------------------------------------------------------------- */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  min-height: 100dvh;
+}
+a {
+  color: var(--accent);
+  text-underline-offset: 0.15em;
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.t-title {
+  font-size: var(--text-title);
+  font-weight: 650;
+}
+.t-sub {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+.t-caption {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+.muted {
+  color: var(--text-2);
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+code,
+pre,
+textarea.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+pre {
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+
+/* --- Shell --------------------------------------------------------------- */
+
+.wrap {
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+.page {
+  padding-block: 1.25rem 4rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  min-height: 3.25rem;
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--text);
+  text-decoration: none;
+  min-height: 2.75rem;
+}
+.logo svg {
+  color: var(--accent);
+}
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+  margin-left: auto;
+}
+.nav a,
+.nav button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border-radius: var(--r-pill);
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.nav a:hover,
+.nav button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.nav a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* --- Components ---------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.cards {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.row-between {
+  justify-content: space-between;
+}
+.price {
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--text-caption);
+}
+.chip-warn {
+  background: transparent;
+  border: 1px solid var(--warn);
+  color: var(--warn);
+}
+.chip-good {
+  background: transparent;
+  border: 1px solid var(--good);
+  color: var(--good);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--surface-2);
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+.btn-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn-sm {
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+}
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+.fieldset {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 1rem;
+  background: var(--surface);
+  min-width: 0;
+}
+.fieldset > legend {
+  padding-inline: 0.25rem;
+  font-weight: 650;
+}
+.grid-2 {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  align-items: start;
+}
+.field {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.field > label,
+.field > .label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.hint {
+  font-size: var(--text-caption);
+  color: var(--text-2);
+}
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--field-line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  min-height: 2rem;
+}
+input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--accent);
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+}
+.interest {
+  display: grid;
+  grid-template-columns: 7rem 1fr 6.5rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+@media (max-width: 28rem) {
+  .interest {
+    grid-template-columns: 5.5rem 1fr 5.5rem;
+  }
+}
+.notice {
+  border-radius: var(--r-sm);
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+}
+.notice-error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.notice-ok {
+  border-color: var(--good);
+  color: var(--good);
+}
+.empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--text-2);
+}
+.table-wrap {
+  overflow-x: auto;
+}
+details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+.center-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.center-page .card {
+  width: 100%;
+  max-width: 24rem;
+}

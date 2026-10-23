@@ -11,5 +11,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
       - name: run check.sh
+        env:
+          RUMBO_OWNER_KEY: ci-only-not-a-secret
         run: ./check.sh

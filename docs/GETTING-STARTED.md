@@ -1,46 +1,26 @@
-# Getting started with rumbo
-
-**Written for a person who is not you.** Assume they have never seen the repo, do not
-know what the app is for, and will give up at the second unexplained step. Delete every
-line below that you replace; a stub left in place reads as neglect.
+# Getting started with Rumbo
 
 ## What this is
 
-One or two sentences. What it does for the person reading, not what it is built from.
+Rumbo is one person's trip planner and travel feed. You tell it where you live, what you like and when you are free;
+servers and AI agents add flights, stays and events they find, and Rumbo keeps them in one list.
 
 ## What you need before you start
 
-- An account: you will be sent an invite by email. Open it on the device you will use.
-- (iOS) The TestFlight app from the App Store.
-- (Android / web) Nothing — open the link and, if you want it on your home screen,
-  use your browser's "Add to Home Screen".
-- Anything the app cannot supply for you (a key, a login elsewhere): name it here, with
-  the page it is created on, or say "nothing".
+- The owner key (`RUMBO_OWNER_KEY`). Whoever runs the server sets it; there is no sign-up.
+- A browser. Nothing to install.
 
 ## First five minutes
 
-1. Open the invite and accept it.
-2. Sign in with your email — or tap "continue without an account" if this app does not
-   need one. A code arrives; type it in.
-3. …the first thing worth doing in the app. One concrete action with a visible result.
-4. …the second.
+1. Open the site and sign in with the owner key.
+2. Open **Profile**. Fill in your home city and airports, then move the interest sliders. Save.
+3. Open **Watches**. Add a route (for example VLC to LIS, departing in December) and an alert price.
+4. Open **Feed**. Findings appear here as the server and your agents post them.
 
-You are set up when: **…** — one sentence naming what they should see on screen.
+You are set up when: **the profile page shows your values after a reload and a watch is listed as active.**
 
-If the first screen shows sample or example data, it is labelled as an example and you
-can clear it in one tap — nothing you see before you sign in and add your own is yours.
+## If something goes wrong
 
-## What it costs you
-
-Nothing, or exactly what. If the app spends the builder's model budget, say what the cap
-is and what happens when it runs out.
-
-## Your data
-
-Where it lives, who else can see it, and how to delete it and the account. Two sentences,
-answered plainly. Someone deciding whether to sign up is asking this even if they do not
-ask it out loud.
-
-## When something is wrong
-
-How to report it, and what to include (what you tapped, what happened, what you expected).
+- "That key is not right": check `RUMBO_OWNER_KEY` in the server's `.env`. Ten wrong tries lock the address out for ten minutes, even for the right key.
+- Signed out after a key change: expected. Rotating the key signs every browser out.
+- The feed is empty: nothing has been collected yet. Post an observation to `/api/v1/observations` or wait for a watch to run.

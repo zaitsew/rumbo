@@ -7,7 +7,7 @@
 name = "rumbo"
 # A command printing key=value counters, read by `teyla products`. The
 # built-but-nobody-used-it detector — fill it in before you ship, not after.
-# usage = "./check.sh usage"
+usage = "./check.sh usage"
 
 # Apple distribution: the bundle id `teyla testflight` asks App Store Connect about.
 # [release]
@@ -29,24 +29,24 @@ platforms = ["web"]                     # ios | macos | web | android | watch | 
 primary = "web"                         # the one platform features land on first (POLICY §11);
                                         # every other entry in `platforms` needs a dated
                                         # line in [productize.triggers] below (R10)
-identity = "none"                       # none | shared-key | invite-key | supabase-auth |
+identity = "shared-key"                 # none | shared-key | invite-key | supabase-auth |
                                         # supabase-auth+tokens | sign-in-with-apple | icloud
-tenancy = "single"                      # single | per-device | user_id | user_id+rls
-backend = "none"                        # none | local-mac | supabase:<ref> | droplet:<name> |
+tenancy = "user_id"                     # single | per-device | user_id | user_id+rls
+backend = "droplet:fabrique-apps-1"     # none | local-mac | supabase:<ref> | droplet:<name> |
                                         # vercel | github-pages
-llm = "none"                            # none | byo-key | app-key | proxy-metered |
+llm = "proxy-metered"                   # none | byo-key | app-key | proxy-metered |
                                         # byo-key+proxy-metered
-first_run = "none"                      # sign-in | sign-in+skip | none — the screen the
+first_run = "sign-in"                   # sign-in | sign-in+skip | none — the screen the
                                         # app opens on; see "The first screen" in
                                         # docs/PRODUCTIZE.md. Never "none" for family/public.
-sample_data = "unlabelled"              # none | labelled | unlabelled — canned content must
+sample_data = "none"                    # none | labelled | unlabelled — canned content must
                                         # never look like the user's own
 onboarding_doc = "docs/GETTING-STARTED.md"
-secrets = []                            # every name must appear in .env.example
+secrets = ["RUMBO_OWNER_KEY"]           # every name must appear in .env.example
 cost_cap = ""                           # required once your key pays for someone else's use
 
 [productize.distribution]
-web = "none"                            # none | pwa | github-pages | vercel | droplet
+web = "droplet"                         # none | pwa | github-pages | vercel | droplet
 # ios = "none"                          # none | xcode | testflight-internal |
 #                                       # testflight-external | app-store
 # macos = "none"                        # none | xcode | testflight | dmg-notarized | app-store
