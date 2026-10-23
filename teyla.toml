@@ -69,54 +69,19 @@ web = "droplet"                         # none | pwa | github-pages | vercel | d
 
 
 # ---------------------------------------------------------------------------
-# A control-plane routine: Teyla runs this one itself.
-#
-#   teyla run rumbo:example --dry     see the plan, create nothing
-#   teyla run rumbo:example           draft -> gate A -> inbox
-#   teyla inbox list                     what is waiting for you
-#
-# Gate A is where every routine starts: it drafts, it stops, and nothing leaves
-# without you approving that exact version. Gate B and C are earned, from
-# receipts, via `teyla promote` — not chosen here. See docs/CONTROL-PLANE.md in
-# the teyla repo.
+# The routines that keep the feed full. Both run elsewhere; they are reported on here.
 # ---------------------------------------------------------------------------
 [[routine]]
-name = "example"
-gate = "A"
-idempotency = "date"                    # date | none | input-hash
+name = "hourly-collect"
+kind = "script"
+# The rumbo-scheduler container on the droplet (deploy/droplet/docker-compose.fragment.yml) POSTs
+# /api/v1/collect once an hour. Check: ssh deploy@159.89.99.84 "cd /srv && docker compose logs --tail 5 rumbo-scheduler"
 
-# Only `clock` triggers are built. Install one with
-# `teyla triggers install rumbo:example`; until then this routine is manual.
-trigger = { type = "clock", at = "09:00", tz = "Europe/London", days = "mon-fri" }
-
-# The draft step. `kind = "command"` runs a shell command and captures its
-# stdout as the draft. `kind = "agent"` calls a model instead:
-#   step = { kind = "agent", harness = "claude", skill = "digest-draft",
-#            prompt = "Draft today's digest.", context = ["runs/**", "NOTES.md"] }
-step = { kind = "command", run = "echo 'replace me: this is the draft this routine produces'" }
-
-# The act step. Optional at gate A — this is what `teyla inbox approve` runs
-# once you have read the draft. Required at gate B and C.
-#
-# Write the reversal of whatever you did to $TEYLA_UNDO. A run with no undo is
-# recorded as "NO UNDO AVAILABLE" in its receipt, and that is the fact that
-# decides whether this routine should ever be promoted off gate A.
-act = { kind = "command", run = "echo 'replace me: what happens after you approve'; echo 'replace me: the command that reverses it' > \"$TEYLA_UNDO\"" }
-
-# Capabilities, as `<scheme>:<value>`. Only what the routine was observed to
-# need — an unused capability is invisible in review until something uses it.
-# Schemes: fs.write:<glob>  shell:<verb>  net:<host>  send:<channel>  tool:<name>
-#
-# A `command` step is checked against these too, before it runs — it never meets
-# the PreToolUse hook, so this is the only place it can be checked. `shell:echo`
-# is what lets the two commands above run at all, and `fs.write:runs/**` is what
-# lets the act step redirect into $TEYLA_UNDO, which lives in the run directory.
-capabilities = ["fs.write:runs/**", "shell:echo"]
-
-# Enforced by code: max_minutes is a wall clock on every step; max_writes and
-# max_sends are counted by the PreToolUse hook and deny past the cap.
-caps = { max_minutes = 10, max_writes = 20, max_sends = 0 }
-
+[[routine]]
+name = "claude-daily"
+kind = "script"
+# Claude desktop scheduled task "rumbo-daily", 07:30 Europe/Madrid, prompt in
+# routines/agents/claude-scheduled-task.md. `teyla schedules` is its record.
 
 # ---------------------------------------------------------------------------
 # A legacy routine: scheduled somewhere else, reported on here.
