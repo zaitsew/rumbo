@@ -1,0 +1,38 @@
+{
+  "_synthetic": true,
+  "_note": "Built from the documented GET /data/hotels response (id, name, stars, rating, city, country).",
+  "data": [
+    {
+      "id": "lp19f3a",
+      "name": "Hotel Lisboa Plaza",
+      "stars": 4,
+      "rating": 8.6,
+      "city": "Lisbon",
+      "country": "pt"
+    },
+    {
+      "id": "lp2b7c1",
+      "name": "Pensão Alfama",
+      "stars": 2,
+      "rating": 7.9,
+      "city": "Lisbon",
+      "country": "pt"
+    },
+    {
+      "id": "lp3d9e5",
+      "name": "Eurostars Das Artes",
+      "stars": 4,
+      "rating": 0,
+      "city": "Lisbon",
+      "country": "pt"
+    },
+    {
+      "id": "lp4aaaa",
+      "name": "No Rate Hotel",
+      "stars": 3,
+      "rating": 8.0,
+      "city": "Lisbon",
+      "country": "pt"
+    }
+  ]
+}

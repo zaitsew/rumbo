@@ -1,0 +1,25 @@
+{
+  "_synthetic": true,
+  "_note": "Built from the documented POST /hotels/min-rates response (hotelId, price, offerId).",
+  "data": [
+    {
+      "hotelId": "lp19f3a",
+      "price": 412.4,
+      "suggestedSellingPrice": 450,
+      "offerId": "offer-lp19f3a"
+    },
+    {
+      "hotelId": "lp2b7c1",
+      "price": 198,
+      "suggestedSellingPrice": 220,
+      "offerId": "offer-lp2b7c1"
+    },
+    {
+      "hotelId": "lp3d9e5",
+      "price": 305.5,
+      "suggestedSellingPrice": 330,
+      "offerId": "offer-lp3d9e5"
+    }
+  ],
+  "sandbox": false
+}

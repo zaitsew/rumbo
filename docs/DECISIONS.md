@@ -16,7 +16,6 @@ scraping too. Rumbo therefore reads only:
 
 - **Kiwi.com public MCP** (`mcp.kiwi.com`, no key): live flight search. Capped at 60 calls a day.
 - **Travelpayouts / Aviasales Data API** (free token): cached fares for cheap-month and anywhere scans.
-- **Ticketmaster Discovery** (free key, 5,000 calls a day): events in watched cities.
 - **Viator Basic** and **Tiqets Partner API** (free affiliate tokens): activities.
 - **LiteAPI** (hotel rates, $0.01 a search) and **Duffel** (flight offers, fees per order and excess
   searches) are paid. Their adapters exist but stay off until Ivan approves the price (POLICY §11).
@@ -54,3 +53,11 @@ env var. Replace with the accounts hub's sign-in when a second person joins.
 
 The repo is public. `profile.example.yaml` is generic. Ivan's profile lives in the database, seeded
 once from a gitignored `profile.local.yaml`, and agents update it through `rumbo_profile_update`.
+
+## D7 — Events belong to SAWk (2026-10-23)
+
+[SAWk](https://github.com/zaitsew/sawk) already keeps an agent-filled feed of offline events where the
+owner lives and travels. Ivan chose the split on 2026-10-23: "Split: Rumbo trips, SAWk events". Rumbo
+owns plans and travel offers (flights, stays, car, activities). For a trip's city and dates it reads
+events from SAWk's API and shows them in the plan; it runs no events collector of its own. The
+`event` observation kind stays, for what SAWk returns.

@@ -1,0 +1,43 @@
+{
+  "_synthetic": true,
+  "_note": "Built from the published OpenAPI document (GET /destinations).",
+  "destinations": [
+    {
+      "destinationId": 50,
+      "name": "Valencia",
+      "type": "CITY",
+      "parentDestinationId": 4,
+      "lookupId": "1.2.4.50",
+      "defaultCurrencyCode": "EUR",
+      "timeZone": "Europe/Madrid",
+      "iataCodes": [
+        "VLC"
+      ]
+    },
+    {
+      "destinationId": 4,
+      "name": "Spain",
+      "type": "COUNTRY",
+      "parentDestinationId": 2,
+      "lookupId": "1.2.4"
+    },
+    {
+      "destinationId": 99999,
+      "name": "Valencia",
+      "type": "AREA",
+      "parentDestinationId": 4,
+      "lookupId": "1.2.4.99999"
+    },
+    {
+      "destinationId": 538,
+      "name": "Lisbon",
+      "type": "CITY",
+      "parentDestinationId": 7,
+      "lookupId": "1.3.7.538",
+      "iataCodes": [
+        "LIS"
+      ]
+    }
+  ],
+  "totalCount": 4
+}
