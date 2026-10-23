@@ -12,7 +12,8 @@ import { DestinationSchema, type Destination } from "../core/destinations";
 let cache: { dir: string; list: Destination[] } | null = null;
 
 export function destinationsDir(env: NodeJS.ProcessEnv = process.env): string {
-  return env.RUMBO_DESTINATIONS_DIR?.trim() || join(process.cwd(), "data", "destinations");
+  // scripts/deploy.sh copies data/destinations next to server.js; next.config.ts traces the YAMLs.
+  return env.RUMBO_DESTINATIONS_DIR?.trim() || join(/*turbopackIgnore: true*/ process.cwd(), "data", "destinations");
 }
 
 export function loadDestinations(dir: string = destinationsDir()): Destination[] {
