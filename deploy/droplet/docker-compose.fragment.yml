@@ -25,6 +25,8 @@ services:
       NODE_ENV: production
       PORT: "{{port}}"
       HOSTNAME: "0.0.0.0"
+      # Caddy is the only thing that can reach this container: believe the last X-Forwarded-For hop.
+      RUMBO_TRUST_PROXY: "1"
       # Where the SQLite file lives inside the container: the volume below.
       RUMBO_DB: /data/rumbo.db
     volumes:

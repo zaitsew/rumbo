@@ -21,6 +21,6 @@ You are set up when: **the profile page shows your values after a reload and a w
 
 ## If something goes wrong
 
-- "That key is not right": check `RUMBO_OWNER_KEY` in the server's `.env`. Ten wrong tries lock the address for ten minutes.
+- "That key is not right": check `RUMBO_OWNER_KEY` in the server's `.env`. Ten wrong tries lock the address out for ten minutes, even for the right key.
 - Signed out after a key change: expected. Rotating the key signs every browser out.
 - The feed is empty: nothing has been collected yet. Post an observation to `/api/v1/observations` or wait for a watch to run.

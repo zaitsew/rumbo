@@ -21,6 +21,7 @@ const json = (v: unknown) => JSON.stringify(v);
 beforeAll(async () => {
   process.env.RUMBO_DB = tmp.path;
   process.env.RUMBO_OWNER_KEY = KEY;
+  process.env.RUMBO_TRUST_PROXY = "1"; // Caddy's X-Forwarded-For names the client
   vi.resetModules();
   mods.profile = (await import("../app/api/v1/profile/route")) as unknown as Mod;
   mods.watches = (await import("../app/api/v1/watches/route")) as unknown as Mod;
@@ -52,15 +53,31 @@ describe("auth on the API", () => {
     expect(wrong.status).toBe(401);
   });
 
-  it("throttles repeated wrong keys from one address", async () => {
-    let last = 0;
-    for (let i = 0; i < 14; i++) {
-      const r = await mods.watches!.GET!(req("/watches", { key: "bad", headers: { "x-forwarded-for": "9.9.9.9" } }));
-      last = r.status;
+  it("locks an address out after ten wrong keys, even for the right key, and spares others", async () => {
+    const from = (ip: string, key: string) => req("/watches", { key, headers: { "x-forwarded-for": ip } });
+    for (let i = 0; i < 10; i++) expect((await mods.watches!.GET!(from("9.9.9.9", "bad"))).status).toBe(401);
+    expect((await mods.watches!.GET!(from("9.9.9.9", "bad"))).status).toBe(429);
+    expect((await mods.watches!.GET!(from("9.9.9.9", KEY))).status).toBe(429);
+    expect((await mods.watches!.GET!(from("8.8.8.8", KEY))).status).toBe(200);
+  });
+
+  it("refuses everything with 503 not_configured when no owner key is set, but keeps health open", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    delete process.env.RUMBO_OWNER_KEY;
+    try {
+      const spoof = { host: "localhost:3000", "x-forwarded-for": "127.0.0.1" };
+      for (const m of [mods.profile!.GET!, mods.watches!.GET!, mods.observations!.GET!, mods.plans!.GET!]) {
+        const r = await m(req("/x", { key: null, headers: spoof }));
+        expect(r.status).toBe(503);
+        expect(await r.json()).toMatchObject({ error: "not_configured" });
+      }
+      const withBearer = await mods.profile!.GET!(req("/profile", { key: "anything" }));
+      expect(withBearer.status).toBe(503);
+      expect((await mods.health!.GET!(new Request(`${BASE}/health`))).status).toBe(200);
+    } finally {
+      process.env.RUMBO_OWNER_KEY = KEY;
+      warn.mockRestore();
     }
-    expect(last).toBe(429);
-    const ok = await mods.watches!.GET!(req("/watches", { headers: { "x-forwarded-for": "9.9.9.9" } }));
-    expect(ok.status).toBe(200); // the right key is never throttled
   });
 
   it("serves health without a key", async () => {
@@ -123,9 +140,20 @@ describe("observations", () => {
     expect(r.status).toBe(200);
     const out = await r.json();
     expect(out.accepted).toBe(2);
+    expect(out.skipped_older).toBe(0);
     expect(out.rejected).toHaveLength(1);
     expect(out.rejected[0].index).toBe(1);
     expect(typeof out.rejected[0].error).toBe("string");
+  });
+
+  it("reports an older copy as skipped_older and keeps the newer one", async () => {
+    const at = (iso: string, cents: number) =>
+      flight("older1", { price: { amount_minor: cents, currency: "EUR" }, provenance: { source: "x", seen_at: iso, expires_at: "2099-01-01T00:00:00Z" } });
+    await mods.observations!.POST!(req("/observations", { method: "POST", body: json([at("2026-10-24T10:00:00Z", 7000)]) }));
+    const r = await mods.observations!.POST!(req("/observations", { method: "POST", body: json([at("2026-10-23T10:00:00Z", 9900)]) }));
+    expect(await r.json()).toMatchObject({ accepted: 1, inserted: 0, updated: 0, skipped_older: 1 });
+    const { observations } = await (await mods.observations!.GET!(req("/observations?kinds=flight&limit=1000"))).json();
+    expect(observations.find((o: { id: string }) => o.id === "older1").price.amount_minor).toBe(7000);
   });
 
   it("caps a call at 200", async () => {

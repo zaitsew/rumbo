@@ -25,7 +25,7 @@ export const GET = route((req, { store }) => {
   return { observations };
 });
 
-/** Body: an array of observations (or `{ observations: [...] }`), at most 200. Valid ones are saved even when others are rejected. */
+/** Body: an array of observations (or `{ observations: [...] }`), at most 200. Valid ones are saved even when others are rejected; one older than the stored copy is `skipped_older`. */
 export const POST = route(async (req, { store }) => {
   const body = await readJson(req);
   const list = Array.isArray(body) ? body : (body as { observations?: unknown } | null)?.observations;
@@ -39,6 +39,7 @@ export const POST = route(async (req, { store }) => {
     if (parsed.success) valid.push(parsed.data);
     else rejected.push({ index, error: zodDetail(parsed.error).map((d) => `${d.path || "(root)"}: ${d.message}`).join("; ") });
   });
-  const { inserted, updated } = store.upsertObservations(valid);
-  return { accepted: valid.length, inserted, updated, rejected };
+  const { inserted, updated, skipped_older } = store.upsertObservations(valid);
+  // `accepted` counts valid observations; `skipped_older` of them were not stored because a newer copy exists.
+  return { accepted: valid.length, inserted, updated, skipped_older, rejected };
 });

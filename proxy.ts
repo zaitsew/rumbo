@@ -11,8 +11,6 @@ export function proxy(request: NextRequest) {
   const auth = authenticate({
     cookie: h.get("cookie"),
     authorization: h.get("authorization"),
-    host: h.get("host"),
-    forwardedFor: h.get("x-forwarded-for"),
   });
   if (auth.ok) return undefined; // continue
 

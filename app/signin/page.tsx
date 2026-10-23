@@ -20,6 +20,16 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   const noKey = !ownerKey();
   if (await isSignedIn()) redirect(next);
 
+  if (noKey) {
+    return (
+      <main className="center-page">
+        <p className="notice notice-error" role="alert">
+          Set RUMBO_OWNER_KEY in .env and restart the server.
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="center-page">
       <form action={signInAction} className="card form" aria-labelledby="signin-title">
@@ -35,7 +45,6 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
             {ERRORS[error]}
           </p>
         ) : null}
-        {noKey ? <p className="notice">No owner key is set on this server.</p> : null}
         <input type="hidden" name="next" value={next} />
         <div className="field">
           <label htmlFor="key">Owner key</label>

@@ -14,7 +14,7 @@ open http://localhost:3000
 # sign in with your RUMBO_OWNER_KEY, then add a watch or fill in /profile
 ```
 
-Without a key, `npm run dev` prints a loud warning and lets only localhost in.
+Without `RUMBO_OWNER_KEY` the server refuses everything, even on localhost: pages show "Set RUMBO_OWNER_KEY in .env", `/api` answers 503 `not_configured`, and a loud warning prints. Only `GET /api/v1/health` stays open.
 `npm run seed-profile` loads a profile from the gitignored `profile.local.yaml` (copy `profile.example.yaml`).
 `./check.sh usage` prints counters from the database: observations, watches, plans, feedback, last collect.
 
@@ -34,7 +34,7 @@ Alpha. Foundation only: app shell, SQLite store, owner key, JSON API, profile an
 | `docs/` | brief, architecture, decisions, plan |
 
 Access: one key, `RUMBO_OWNER_KEY` (D5). The browser signs in at `/signin` and holds an httpOnly cookie with an HMAC of the key.
-API clients send `Authorization: Bearer <key>`. Data lives in SQLite at `RUMBO_DB` (default `./data/rumbo.db`), every row with a `user_id`.
+API clients send `Authorization: Bearer <key>`. Wrong keys are counted per client address: ten failures in ten minutes lock that address out (429 for every request, right key included); 300 failures from all addresses lock everyone out until the window rolls. Data lives in SQLite at `RUMBO_DB` (default `./data/rumbo.db`), every row with a `user_id`.
 
 ## JSON API
 
@@ -48,6 +48,13 @@ GET|POST /api/v1/feedback
 GET|POST /api/v1/history
 GET      /api/v1/plans              GET /api/v1/plans/:id
 ```
+
+## Which header is trusted
+
+Failures are counted per client address. Production runs behind Caddy on a private Docker network, so the compose file sets `RUMBO_TRUST_PROXY=1`:
+Rumbo then reads the **last** entry of `X-Forwarded-For` (the hop Caddy added, which a client cannot choose).
+Without that variable no forwarded header is believed and all clients share one bucket, which is the safe setting for a local `next dev`.
+`Host` is never used for access decisions.
 
 ## Deploy
 

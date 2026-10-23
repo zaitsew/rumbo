@@ -86,16 +86,33 @@ describe("watches", () => {
 
 describe("observations", () => {
   it("upserts by id and keeps the first seen_at", () => {
-    expect(s.upsertObservations([flight("a")])).toEqual({ inserted: 1, updated: 0 });
+    expect(s.upsertObservations([flight("a")])).toEqual({ inserted: 1, updated: 0, skipped_older: 0 });
     const again = flight("a", {
       price: { amount_minor: 7000, currency: "EUR" },
       provenance: { source: "kiwi-mcp", seen_at: "2026-10-24T08:00:00+02:00", expires_at: "2026-10-26T08:00:00+02:00" },
     });
-    expect(s.upsertObservations([again])).toEqual({ inserted: 0, updated: 1 });
+    expect(s.upsertObservations([again])).toEqual({ inserted: 0, updated: 1, skipped_older: 0 });
     const [row] = s.listStoredObservations({ now: new Date("2026-10-24T09:00:00Z") });
     expect(row!.first_seen_at).toBe("2026-10-23T06:00:00.000Z");
     expect(row!.seen_at).toBe("2026-10-24T06:00:00.000Z");
     expect(row!.observation.kind === "flight" && row!.observation.price.amount_minor).toBe(7000);
+  });
+
+  it("never lets an older observation overwrite a newer one", () => {
+    const at = (iso: string, cents: number) =>
+      flight("a", { price: { amount_minor: cents, currency: "EUR" }, provenance: { source: "kiwi-mcp", seen_at: iso } });
+    s.upsertObservations([at("2026-10-24T10:00:00Z", 7000)]);
+    expect(s.upsertObservations([at("2026-10-23T10:00:00Z", 9900)])).toEqual({ inserted: 0, updated: 0, skipped_older: 1 });
+    const [row] = s.listStoredObservations({ includeStale: true });
+    expect(row!.observation.kind === "flight" && row!.observation.price.amount_minor).toBe(7000);
+    expect(row!.seen_at).toBe("2026-10-24T10:00:00.000Z");
+    // the same instant is not older: it updates; first_seen_at stays at the first insert
+    expect(s.upsertObservations([at("2026-10-24T10:00:00Z", 6500)])).toEqual({ inserted: 0, updated: 1, skipped_older: 0 });
+    // a batch is applied in order: the older duplicate inside one call loses to the newer one before it
+    expect(s.upsertObservations([at("2026-10-25T10:00:00Z", 6000), at("2026-10-24T12:00:00Z", 5000)])).toEqual({ inserted: 0, updated: 1, skipped_older: 1 });
+    const [after] = s.listStoredObservations({ includeStale: true });
+    expect(after!.observation.kind === "flight" && after!.observation.price.amount_minor).toBe(6000);
+    expect(after!.first_seen_at).toBe("2026-10-24T10:00:00.000Z");
   });
 
   it("rolls the whole batch back when one observation is invalid", () => {

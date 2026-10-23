@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { errorResponse } from "./http";
-import { authFailLimiter, clientIp } from "./ratelimit";
+import { authLockout, clientIp } from "./ratelimit";
 
 /**
  * Access is one owner key (D5). `RUMBO_OWNER_KEY` gates the site, the API and MCP.
@@ -8,8 +8,10 @@ import { authFailLimiter, clientIp } from "./ratelimit";
  *  - API and MCP clients send `Authorization: Bearer <key>`.
  *  - Claude and ChatGPT connectors cannot send a header, so `/mcp/<key>` is accepted too
  *    (`keyFromMcpPath`). That URL is a secret; rotating the key changes it.
- *  - No key in development: a loud warning, and only localhost gets in. No key in production:
- *    nothing gets in.
+ *  - No key, in any environment: nothing gets in. There is no localhost exemption, because Host and
+ *    X-Forwarded-For are client-controlled and a dev server can be reached from the network.
+ *  - Failures are counted per client address (see `clientIp`) and checked BEFORE credentials, so a
+ *    locked-out client is refused with 429 even when it sends the right key.
  */
 
 export const COOKIE_NAME = "rumbo_session";
@@ -77,31 +79,15 @@ export function readCookie(header: string | null | undefined, name: string): str
   return null;
 }
 
-function isLoopback(address: string): boolean {
-  const a = address.trim().replace(/^::ffff:/i, "");
-  return a === "127.0.0.1" || a === "::1" || a === "localhost";
-}
-
-/**
- * Local means the Host header names this machine and every hop of `x-forwarded-for` is loopback.
- * `next dev` adds `x-forwarded-for: ::1` itself; a real proxy appends the visitor's address, so a
- * remote request never passes, whatever Host it claims.
- */
-export function isLocalRequest(host: string | null | undefined, forwardedFor?: string | null): boolean {
-  if (!host) return false;
-  if (forwardedFor && !forwardedFor.split(",").every(isLoopback)) return false;
-  const name = host.startsWith("[") ? host.slice(0, host.indexOf("]") + 1) : host.split(":")[0]!;
-  return name === "localhost" || name === "127.0.0.1" || name === "[::1]";
-}
-
 let warned = false;
-function warnNoKey(): void {
+/** Printed once, on the first request that finds no key. */
+export function warnNoKey(): void {
   if (warned) return;
   warned = true;
   const bar = "!".repeat(72);
   console.warn(
-    `\n${bar}\n  RUMBO_OWNER_KEY is not set. Development mode: only localhost is allowed in.\n` +
-      `  Set it in .env (openssl rand -hex 24) before exposing this server.\n${bar}\n`,
+    `\n${bar}\n  RUMBO_OWNER_KEY is not set. Every page and API route refuses all requests.\n` +
+      `  Set it in .env (openssl rand -hex 24) and restart.\n${bar}\n`,
   );
 }
 
@@ -110,12 +96,10 @@ export interface AuthInput {
   cookie?: string | null;
   /** The raw `Authorization` header. */
   authorization?: string | null;
-  host?: string | null;
-  forwardedFor?: string | null;
 }
 
 export type AuthResult =
-  | { ok: true; via: "cookie" | "bearer" | "local-dev"; principal: string }
+  | { ok: true; via: "cookie" | "bearer"; principal: string }
   | { ok: false; status: 401 | 503; error: string; detail: string; presented: boolean };
 
 function fingerprint(key: string): string {
@@ -126,12 +110,8 @@ function fingerprint(key: string): string {
 export function authenticate(input: AuthInput, env: Env = process.env): AuthResult {
   const key = ownerKey(env);
   if (!key) {
-    if (env.NODE_ENV === "production") {
-      return { ok: false, status: 503, error: "owner_key_not_set", detail: "RUMBO_OWNER_KEY is not set on this server.", presented: false };
-    }
     warnNoKey();
-    if (isLocalRequest(input.host, input.forwardedFor)) return { ok: true, via: "local-dev", principal: "local-dev" };
-    return { ok: false, status: 401, error: "unauthorized", detail: "No owner key is set; only localhost is allowed.", presented: false };
+    return { ok: false, status: 503, error: "not_configured", detail: "RUMBO_OWNER_KEY is not set on this server. Set it in .env and restart.", presented: false };
   }
 
   const bearer = /^Bearer\s+(.+)$/i.exec(input.authorization?.trim() ?? "")?.[1]?.trim();
@@ -154,21 +134,24 @@ export function authInputFrom(request: Request): AuthInput {
   return {
     cookie: h.get("cookie"),
     authorization: h.get("authorization"),
-    host: h.get("host") ?? new URL(request.url).host,
-    forwardedFor: h.get("x-forwarded-for"),
   };
 }
 
 export type Authorized = { ok: true; principal: string } | { ok: false; response: Response };
 
-/** For API routes: the owner's principal, or the response to return. Wrong credentials are throttled per address. */
+/**
+ * For API routes: the owner's principal, or the response to return. The lockout is asked first, so
+ * a locked-out client never reaches the credential check. A wrong bearer key counts as a failure.
+ */
 export function authorize(request: Request): Authorized {
   const ip = clientIp(request.headers);
+  const lock = authLockout();
+  if (ownerKey() && lock.locked(ip)) {
+    return { ok: false, response: errorResponse(429, "too_many_attempts", "Too many wrong keys. Wait ten minutes.", { "Retry-After": "600" }) };
+  }
   const result = authenticate(authInputFrom(request));
   if (result.ok) return { ok: true, principal: result.principal };
-  if (result.presented && !authFailLimiter().take(ip)) {
-    return { ok: false, response: errorResponse(429, "too_many_attempts", "Too many wrong keys from this address. Wait ten minutes.", { "Retry-After": "600" }) };
-  }
+  if (result.presented) lock.fail(ip);
   return { ok: false, response: errorResponse(result.status, result.error, result.detail, result.status === 401 ? { "WWW-Authenticate": 'Bearer realm="rumbo"' } : undefined) };
 }
 
@@ -178,12 +161,31 @@ export function requireOwner(request: Request): Response | null {
   return a.ok ? null : a.response;
 }
 
-/** Throttle sign-in attempts. Returns false when this address has used its attempts. */
-export function allowSignInAttempt(ip: string): boolean {
-  return authFailLimiter().take(`signin:${ip}`);
+/** Sign-in asks this before looking at the key. */
+export function signInLocked(ip: string): boolean {
+  return authLockout().locked(ip);
 }
 
-/** Only same-site paths survive: "/profile" yes; "//evil.com", "/\\evil.com" and "https://evil.com" become "/". */
+/** A wrong key on the sign-in form. */
+export function recordSignInFailure(ip: string): void {
+  authLockout().fail(ip);
+}
+
+/**
+ * Only same-site paths survive. The value is rejected when it holds a control character (tab and
+ * newline are stripped by URL parsing, so "/\t/evil.example" would become "//evil.example") or a
+ * backslash, then resolved against a dummy origin: it must stay on that origin and keep a single
+ * leading slash. Anything else becomes "/".
+ */
 export function safeNextPath(value: unknown): string {
-  return typeof value === "string" && /^\/(?![/\\])/.test(value) ? value : "/";
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return "/";
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f\\]/.test(value)) return "/";
+  try {
+    const u = new URL(value, "http://x");
+    if (u.origin !== "http://x" || !u.pathname.startsWith("/") || u.pathname.startsWith("//")) return "/";
+    return u.pathname + u.search + u.hash;
+  } catch {
+    return "/";
+  }
 }

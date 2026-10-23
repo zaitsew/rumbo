@@ -9,8 +9,6 @@ export async function isSignedIn(): Promise<boolean> {
   return authenticate({
     cookie: cookie ? `${COOKIE_NAME}=${cookie.value}` : null,
     authorization: h.get("authorization"),
-    host: h.get("host"),
-    forwardedFor: h.get("x-forwarded-for"),
   }).ok;
 }
 

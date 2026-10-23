@@ -312,28 +312,39 @@ export function createStore(db: Db, userId: string = OWNER) {
     },
 
     // observations
-    upsertObservations(input: unknown[]): { inserted: number; updated: number } {
+    /**
+     * Upsert by id. An observation older than the stored one (its `seen_at` is earlier) is skipped, so
+     * a slow collector or a replayed batch cannot overwrite a fresher price. `first_seen_at` never moves.
+     */
+    upsertObservations(input: unknown[]): { inserted: number; updated: number; skipped_older: number } {
       const list = input.map((o) => ObservationSchema.parse(o));
       let inserted = 0;
       let updated = 0;
+      let skipped_older = 0;
       inTransaction(db, () => {
-        const exists = db.prepare("SELECT 1 AS x FROM observations WHERE user_id = ? AND id = ?");
+        const existing = db.prepare("SELECT seen_at FROM observations WHERE user_id = ? AND id = ?");
         const upsert = db.prepare(
           `INSERT INTO observations (user_id, id, kind, place, seen_at, first_seen_at, expires_at, json)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(user_id, id) DO UPDATE SET
              kind = excluded.kind, place = excluded.place, seen_at = excluded.seen_at,
-             expires_at = excluded.expires_at, json = excluded.json`,
+             expires_at = excluded.expires_at, json = excluded.json
+           WHERE excluded.seen_at >= observations.seen_at`,
         );
         for (const o of list) {
-          if (exists.get(userId, o.id)) updated++;
-          else inserted++;
           const seen = utc(o.provenance.seen_at);
+          const prior = existing.get(userId, o.id) as { seen_at: string } | undefined;
+          if (prior && seen < prior.seen_at) {
+            skipped_older++;
+            continue;
+          }
+          if (prior) updated++;
+          else inserted++;
           const expires = o.provenance.expires_at ? utc(o.provenance.expires_at) : null;
           upsert.run(userId, o.id, o.kind, o.place, seen, seen, expires, JSON.stringify(o));
         }
       });
-      return { inserted, updated };
+      return { inserted, updated, skipped_older };
     },
     listStoredObservations,
     listObservations(opts: ListObservationsOptions = {}): Observation[] {
