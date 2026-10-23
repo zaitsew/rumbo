@@ -18,6 +18,9 @@ export type SourceQuery =
       window: { from: Day; to: Day };
       nights?: { min: number; max: number };
       adults: number;
+      /** Children travelling (2-11). Ages are in `child_ages`; see `childAges`. */
+      children?: number;
+      child_ages?: number[];
       currency: string;
       max_stops?: number;
     }
@@ -29,12 +32,23 @@ export type SourceQuery =
       check_in: Day;
       check_out: Day;
       adults: number;
+      children?: number;
+      child_ages?: number[];
       currency: string;
     }
   | { kind: "activities"; place: string; country?: string; date?: Day; currency?: string }
   | { kind: "events"; place: string; country?: string; window: { from: Day; to: Day } };
 
 export type QueryKind = SourceQuery["kind"];
+
+/** The profile stores no ages. When a source needs them, every child is this old. */
+export const DEFAULT_CHILD_AGE = 8;
+
+/** One age per child: the given ages, padded (or cut) to `children` with DEFAULT_CHILD_AGE. */
+export function childAges(q: { children?: number; child_ages?: number[] }): number[] {
+  const n = Math.max(0, q.children ?? q.child_ages?.length ?? 0);
+  return Array.from({ length: n }, (_, i) => q.child_ages?.[i] ?? DEFAULT_CHILD_AGE);
+}
 
 /** The observation kind each query kind produces. */
 export const OBSERVATION_KIND_OF: Record<QueryKind, ObservationKind> = {

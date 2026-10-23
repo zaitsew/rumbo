@@ -64,6 +64,16 @@ describe("tiqets", () => {
     expect(o.provenance.expires_at).toBe("2026-10-24T08:00:00.000Z");
     for (const x of obs) expect(() => ObservationSchema.parse(x)).not.toThrow();
   });
+  it("does not claim availability on the requested date", () => {
+    const obs = mapTiqets(res, { ...acts, date: "2026-12-12" }, NOW);
+    expect(obs.length).toBeGreaterThan(0);
+    for (const o of obs) {
+      if (o.kind !== "activity") throw new Error();
+      expect(o.date).toBeUndefined();
+    }
+    // The same product gets the same id whatever date was asked.
+    expect(mapTiqets(res, acts, NOW).map((o) => o.id)).toEqual(obs.map((o) => o.id));
+  });
   it("sends the Token header and the documented parameters", async () => {
     const u = new URL(tqUrl(acts));
     expect(Object.fromEntries(u.searchParams)).toMatchObject({ city_name: "Valencia", currency: "EUR", sort: "popularity", page_size: "20" });
@@ -116,5 +126,12 @@ describe("liteapi", () => {
     expect(l.callsFor!(stays)).toBe(1);
     await l.search(stays, ctx);
     expect(seen).toHaveLength(3);
+  });
+
+  it("sends children's ages in the occupancy", async () => {
+    const l = createLiteapiSource();
+    const { fetch, seen } = fakeFetch((r) => (r.url.includes("/data/hotels") ? hotels : rates));
+    await l.search({ ...stays, children: 2, child_ages: [6] }, { now: NOW, fetch, env: { LITEAPI_KEY: "lk", RUMBO_ALLOW_PAID_LITEAPI: "1" } });
+    expect(seen[1]!.body.occupancies).toEqual([{ adults: 2, children: [6, 8] }]);
   });
 });

@@ -26,6 +26,14 @@ describe("kiwiArguments", () => {
     expect(a).toMatchObject({ flyFrom: "VLC,ALC", flyTo: "anywhere", one_for_city: true });
     expect(a).not.toHaveProperty("nights_in_dst_from");
   });
+  it("passes children to Kiwi", () => {
+    const a = kiwiArguments({ ...flightsVlcLis, adults: 2, children: 2, child_ages: [5, 8] }, NOW);
+    expect(a).toMatchObject({ adults: 2, children: 2 });
+    expect(Object.keys(tools.tools.find((t: any) => t.name === KIWI_TOOL).inputSchema.properties)).toContain("children");
+    // Kiwi counts children aged 2-11 only; a 12-year-old is an adult fare it cannot express here.
+    expect(kiwiArguments({ ...flightsVlcLis, children: 2, child_ages: [1, 8] }, NOW)).toMatchObject({ children: 1 });
+    expect(kiwiArguments(flightsVlcLis, NOW)).not.toHaveProperty("children");
+  });
   it("never searches the past", () => {
     const a = kiwiArguments({ ...flightsVlcLis, window: { from: "2026-10-01", to: "2026-10-02" } }, NOW);
     expect(a.departureDate).toBe("23/10/2026");
@@ -72,6 +80,30 @@ describe("mapKiwi on the recorded response", () => {
     const o = mapKiwi(two, { ...flightsVlcLis, adults: 2 }, NOW).find((x) => x.kind === "flight")!;
     if (o.kind !== "flight") throw new Error();
     expect(o.price.amount_minor).toBe(4500);
+  });
+
+  it("leaves legs out, instead of guessing, when an airport's zone is unknown", () => {
+    const odd = structuredClone(recorded.structuredContent);
+    for (const it of odd.itineraries) for (const sg of it.outbound.segments) { sg.to = "XXX"; sg.toCountry = "Narnia"; }
+    const mapped = mapKiwi(parseKiwiResult({ structuredContent: odd }), flightsVlcLis, NOW);
+    expect(mapped.length).toBeGreaterThan(0);
+    for (const o of mapped) {
+      if (o.kind !== "flight") throw new Error();
+      expect(o.legs).toEqual([]);
+      expect(o.depart_date).toBeTruthy();
+      expect(o.price.amount_minor).toBeGreaterThan(0);
+    }
+  });
+
+  it("ids cover the return flight: same outbound with another return is another itinerary", () => {
+    const c = structuredClone(recorded.structuredContent);
+    const src = c.itineraries.find((i: any) => i.inbound?.segments?.length);
+    if (!src) throw new Error("fixture has no return itinerary");
+    const twin = structuredClone(src);
+    twin.inbound.segments[0].flightNumber = "9999";
+    c.itineraries = [src, twin];
+    const mapped = mapKiwi(parseKiwiResult({ structuredContent: c }), flightsVlcLis, NOW);
+    expect(new Set(mapped.map((o) => o.id)).size).toBe(2);
   });
 
   it("keeps ids stable between runs and ignores the price", () => {

@@ -2,7 +2,7 @@ import { ObservationSchema, type Observation } from "../../core/schema";
 import { observationId } from "./id";
 import { SourceError, addHours, requestJson, toMinor } from "./http";
 import { countryOfCity } from "./places";
-import type { Env, SearchContext, Source, SourceQuery } from "./types";
+import { childAges, type Env, type SearchContext, type Source, type SourceQuery } from "./types";
 
 /**
  * LiteAPI (Nuitee Connect) hotel rates: a hotel list for the city, then the cheapest rate per hotel.
@@ -46,7 +46,7 @@ export function mapLiteapi(hotels: LiteHotels, rates: LiteMinRates, q: StayQuery
       tags: [],
       check_in: q.check_in,
       check_out: q.check_out,
-      price_total: { amount_minor: toMinor(r.price), currency: q.currency.toUpperCase() },
+      price_total: { amount_minor: toMinor(r.price, q.currency), currency: q.currency.toUpperCase() },
       stay_kind: "hotel",
       rating: typeof h.rating === "number" && h.rating > 0 ? Math.min(10, h.rating) : undefined,
       name: h.name,
@@ -96,7 +96,7 @@ export function createLiteapiSource(): Source {
         headers,
         body: {
           hotelIds: ids,
-          occupancies: [{ adults: q.adults }],
+          occupancies: [{ adults: q.adults, ...(childAges(q).length ? { children: childAges(q) } : {}) }],
           checkin: q.check_in,
           checkout: q.check_out,
           currency: q.currency.toUpperCase(),

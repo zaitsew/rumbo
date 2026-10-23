@@ -7,7 +7,7 @@ import { liteapi } from "./liteapi";
 import { tiqets } from "./tiqets";
 import { travelpayouts } from "./travelpayouts";
 import { viator } from "./viator";
-import { OBSERVATION_KIND_OF, type CallLedger, type CallRecord, type Env, type Source, type SourceQuery } from "./types";
+import { OBSERVATION_KIND_OF, childAges, type CallLedger, type CallRecord, type Env, type Source, type SourceQuery } from "./types";
 
 export * from "./types";
 export { createMemoryLedger } from "./ledger";
@@ -32,21 +32,24 @@ export function describeSources(env: Env, sources: Source[] = ALL_SOURCES) {
 /** Turn a watch into the queries that serve it. A watch with nothing to search returns []. */
 export function queriesForWatch(watch: Watch, profile: Profile): SourceQuery[] {
   const adults = profile.travellers.adults;
+  // The profile keeps a head count, not ages. Sources that need ages get DEFAULT_CHILD_AGE (8) for each child.
+  const children = profile.travellers.children;
+  const child_ages = childAges({ children });
   const currency = profile.currency;
   const origin = watch.origin.length ? watch.origin : profile.home_airports;
   switch (watch.kind) {
     case "route":
       if (!watch.destination.length) return [];
-      return [{ kind: "flights", origin, destination: watch.destination, window: watch.window, nights: watch.nights, adults, currency, max_stops: profile.flight.max_stops }];
+      return [{ kind: "flights", origin, destination: watch.destination, window: watch.window, nights: watch.nights, adults, children, child_ages, currency, max_stops: profile.flight.max_stops }];
     case "anywhere":
-      return [{ kind: "flights", origin, destination: "anywhere", window: watch.window, nights: watch.nights, adults, currency, max_stops: profile.flight.max_stops }];
+      return [{ kind: "flights", origin, destination: "anywhere", window: watch.window, nights: watch.nights, adults, children, child_ages, currency, max_stops: profile.flight.max_stops }];
     case "place-events":
       if (!watch.place) return [];
       return [{ kind: "events", place: watch.place, country: countryOfCity(watch.place), window: watch.window }];
     case "place-stays": {
       if (!watch.place) return [];
       const nights = Math.max(1, watch.nights?.min ?? 2);
-      return [{ kind: "stays", place: watch.place, country: countryOfCity(watch.place), check_in: watch.window.from, check_out: addDays(watch.window.from, nights), adults, currency }];
+      return [{ kind: "stays", place: watch.place, country: countryOfCity(watch.place), check_in: watch.window.from, check_out: addDays(watch.window.from, nights), adults, children, child_ages, currency }];
     }
     case "place-activities":
       if (!watch.place) return [];

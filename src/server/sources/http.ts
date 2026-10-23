@@ -55,4 +55,26 @@ export function addHours(now: Date, h: number): string {
   return new Date(now.getTime() + h * 3_600_000).toISOString();
 }
 
-export const toMinor = (major: number | string): number => Math.round(Number(major) * 100);
+const exponents = new Map<string, number>();
+
+/** ISO 4217 minor-unit exponent: JPY 0, EUR 2, KWD and BHD 3. Read from ICU; 2 for a code it does not know. */
+export function minorExponent(currency: string): number {
+  const code = currency.toUpperCase();
+  let e = exponents.get(code);
+  if (e === undefined) {
+    try {
+      e = new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits ?? 2;
+    } catch {
+      e = 2;
+    }
+    exponents.set(code, e);
+  }
+  return e;
+}
+
+/** 12.5 EUR -> 1250; 1200 JPY -> 1200; 1.234 KWD -> 1234. */
+export const toMinor = (major: number | string, currency: string): number =>
+  Math.round(Number(major) * 10 ** minorExponent(currency));
+
+/** 1250 EUR -> "12.50"; 1200 JPY -> "1200". For logs and the smoke script. */
+export const formatMinor = (minor: number, currency: string): string => (minor / 10 ** minorExponent(currency)).toFixed(minorExponent(currency));

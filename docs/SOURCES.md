@@ -27,7 +27,7 @@ exact variable to set when it is off.
   `one_for_city` and `sort`. `flyFrom` and `flyTo` take comma-separated IATA lists and `flyTo` takes
   `"anywhere"`; both were tried live on 2026-10-23.
 - Returns `itineraries[]` with `price` (all passengers), `bookingUrl`, `outbound`/`inbound` legs with
-  local-time segments (no offset; Rumbo adds one from the airport's country, see `time.ts`).
+  local-time segments with no offset and no UTC twin. Rumbo adds an offset only for an airport or country whose single zone it knows (`time.ts`) and only when the zones agree with the segment's own duration (10 minutes); otherwise `legs` is empty and the observation keeps its dates and price. It never guesses a zone. Duffel gives zones and Rumbo uses them the same way.
 - The tool states no price expiry. Rumbo treats a Kiwi price as good for six hours (unverified).
 - Terms: see the table. If Kiwi says scheduled use is not allowed, set `RUMBO_KIWI_MCP=0`; the planner
   then falls back to Travelpayouts and deep links.
@@ -51,12 +51,16 @@ Both stay off until the owner approves the price (POLICY section 11: state the p
   `expires_at`. Kiwi: 6 hours. Travelpayouts: the API's `expires_at` when present, else 24 hours. Viator and
   Tiqets: 24 hours. LiteAPI: 6 hours. Duffel: the offer's `expires_at`. A
   past `expires_at` is passed through; the ranker marks it stale.
-- **Money** is integer minor units. Flight prices are per person: Kiwi and Duffel quote the whole party and
+- **Money** is integer minor units, scaled by the currency's ISO 4217 exponent (`toMinor` in `http.ts`: JPY 0,
+  EUR 2, KWD and BHD 3). Flight prices are per person: Kiwi and Duffel quote the whole party and
   Rumbo divides by the passenger count.
 - **Ids** are `sha256(kind + key fields)`, never the price or the source. Flights: origin, destination,
-  depart and return dates, first outbound flight number. Stays: name, place, dates. Activities and events:
+  depart and return dates, and every leg of both directions (flight number and local departure date), so two itineraries that share an outbound leg stay apart. Letters of every script count (NFKC, lower case). Travelpayouts only knows the first outbound flight, so its ids do not match Kiwi's. Stays: name, place, dates. Activities and events:
   title, place, date (and venue). The same offer seen twice, by one source or two, is one row; `runSources`
   keeps the cheaper copy.
+- **Children.** `profile.travellers.children` goes into every flights and stays query, with `child_ages` (age 8
+  when the profile gives none). Duffel and LiteAPI receive ages; Kiwi takes a count of children aged 2-11.
+- **Tiqets** results carry no `date`: the catalogue call does not confirm availability for a day.
 - **Caps** are counted before the call, per source and UTC day, in a `CallLedger` (SQLite in the app, memory
   in tests). A query that would cross the cap is skipped and reported as `skipped: "cap"`. A source answering
   401, 403 or 429 gets no more queries that run.
@@ -77,7 +81,7 @@ Both stay off until the owner approves the price (POLICY section 11: state the p
 - LiteAPI: whether `min-rates` `price` is the whole stay; the real cost of the rates path (above).
 - Duffel: `time_zone` and `city_name` on place objects.
 - The keyed adapters are tested on synthetic fixtures built from the documented shapes (`"_synthetic": true`).
-  Only Kiwi has a recorded real response. Run `npx tsx scripts/source-smoke.ts` after setting a key.
+  Only Kiwi has a recorded real response. Run `npx tsx scripts/source-smoke.ts` after setting a key. It calls free sources only, through `runSources` and a ledger in `runs/source-smoke-ledger.json`, so repeat runs count against the daily cap; paid sources (LiteAPI, Duffel) are never called from it.
 - Country is given as the source gives it: Kiwi uses a name ("Portugal"), others an ISO code ("PT").
 
 ## Agent connectors (not called by Rumbo)

@@ -1,9 +1,9 @@
 import { ObservationSchema, type Observation } from "../../core/schema";
-import { flightId, flightNo } from "./id";
+import { flightId, flightNo, legKey } from "./id";
 import { SourceError, addDays, addHours, requestJson, toMinor } from "./http";
 import { placeOfAirport } from "./places";
-import { withOffset } from "./time";
-import type { Env, Source, SourceQuery } from "./types";
+import { offsetLegs, type LocalSegment } from "./time";
+import { childAges, type Env, type Source, type SourceQuery } from "./types";
 
 /**
  * Duffel flight offer requests. PAID, per decision D2 and POLICY section 11: off unless DUFFEL_TOKEN is
@@ -26,7 +26,7 @@ const MAX_OFFERS = 10;
 interface DPlace { iata_code: string; city_name?: string | null; iata_country_code?: string; time_zone?: string | null }
 interface DSegment {
   origin: DPlace; destination: DPlace; departing_at: string; arriving_at: string;
-  marketing_carrier?: { name?: string; iata_code?: string }; marketing_carrier_flight_number?: string;
+  marketing_carrier?: { name?: string; iata_code?: string }; marketing_carrier_flight_number?: string; duration?: string | null;
 }
 interface DSlice { segments: DSegment[]; duration?: string | null }
 export interface DuffelOffer {
@@ -59,7 +59,8 @@ export function requestBody(q: FlightQuery, pair: { origin: string; destination:
   return {
     data: {
       slices,
-      passengers: Array.from({ length: q.adults }, () => ({ type: "adult" })),
+      // Duffel takes a type or an age per passenger, not both. Children go in by age (default 8, see childAges).
+      passengers: [...Array.from({ length: q.adults }, () => ({ type: "adult" })), ...childAges(q).map((age) => ({ age }))],
       cabin_class: "economy",
       max_connections: Math.min(q.max_stops ?? 1, 2),
     },
@@ -69,7 +70,7 @@ export function requestBody(q: FlightQuery, pair: { origin: string; destination:
 export function mapDuffel(res: DuffelResponse, q: FlightQuery, now: Date): Observation[] {
   if (res.errors?.length) throw new SourceError(`duffel: ${res.errors[0]?.message ?? "error"}`);
   const seenAt = now.toISOString();
-  const pax = Math.max(1, q.adults);
+  const pax = Math.max(1, q.adults + childAges(q).length);
   const out: Observation[] = [];
   for (const offer of res.data?.offers ?? []) {
     const outb = offer.slices[0];
@@ -77,14 +78,17 @@ export function mapDuffel(res: DuffelResponse, q: FlightQuery, now: Date): Obser
     const first = outb?.segments[0];
     const last = outb?.segments[outb.segments.length - 1];
     if (!outb || !first || !last) continue;
-    const legsOf = (s: DSlice | undefined) =>
-      (s?.segments ?? []).map((g) => ({
-        from: g.origin.iata_code, to: g.destination.iata_code,
-        depart_at: withOffset(g.departing_at, g.origin.time_zone ?? "UTC"),
-        arrive_at: withOffset(g.arriving_at, g.destination.time_zone ?? "UTC"),
+    // Duffel's times are local. The zone comes from the place object; without it the legs are left out.
+    const localSegs = (sl: DSlice | undefined): LocalSegment[] =>
+      (sl?.segments ?? []).map((g) => ({
+        from: g.origin.iata_code, to: g.destination.iata_code, departLocal: g.departing_at, arriveLocal: g.arriving_at,
+        durationMin: isoMinutes(g.duration),
+        tzFrom: g.origin.time_zone ?? undefined, tzTo: g.destination.time_zone ?? undefined,
         carrier: g.marketing_carrier?.name ?? g.marketing_carrier?.iata_code ?? "",
         flight_no: flightNo(g.marketing_carrier?.iata_code, g.marketing_carrier_flight_number) || undefined,
       }));
+    const legKeys = [...(outb?.segments ?? []), ...(back?.segments ?? [])].map((g) =>
+      legKey({ carrier: g.marketing_carrier?.iata_code, number: g.marketing_carrier_flight_number, from: g.origin.iata_code, to: g.destination.iata_code, departLocal: g.departing_at }));
     const depart_date = first.departing_at.slice(0, 10);
     const return_date = back?.segments[0]?.departing_at.slice(0, 10);
     const fallback = placeOfAirport(last.destination.iata_code);
@@ -93,7 +97,7 @@ export function mapDuffel(res: DuffelResponse, q: FlightQuery, now: Date): Obser
       kind: "flight",
       id: flightId({
         origin: first.origin.iata_code, destination: last.destination.iata_code, depart_date, return_date,
-        first_flight: flightNo(first.marketing_carrier?.iata_code, first.marketing_carrier_flight_number),
+        legs: legKeys,
       }),
       provenance: { source: "duffel", seen_at: seenAt, expires_at: offer.expires_at ?? addHours(now, 0.5) },
       title: `${first.origin.iata_code} → ${place}, ${depart_date}${return_date ? ` – ${return_date}` : ""}`,
@@ -104,10 +108,10 @@ export function mapDuffel(res: DuffelResponse, q: FlightQuery, now: Date): Obser
       destination: last.destination.iata_code,
       depart_date,
       return_date,
-      price: { amount_minor: Math.round(toMinor(offer.total_amount) / pax), currency: offer.total_currency.toUpperCase() },
+      price: { amount_minor: Math.round(toMinor(offer.total_amount, offer.total_currency) / pax), currency: offer.total_currency.toUpperCase() },
       stops: Math.max(outb.segments.length - 1, back ? back.segments.length - 1 : 0),
       duration_minutes: isoMinutes(outb.duration),
-      legs: [...legsOf(outb), ...legsOf(back)],
+      legs: offsetLegs([...localSegs(outb), ...localSegs(back)]) ?? [],
       seller: offer.owner?.name,
     }));
   }

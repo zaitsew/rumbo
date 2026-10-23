@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto";
 import type { ObservationKind } from "../../core/schema";
 
-/** Lower-case, strip accents and punctuation, collapse spaces: "Café  Del Mar!" and "cafe del mar" match. */
+/**
+ * NFKC, lower-case, anything that is not a letter, mark or digit of any script becomes one space.
+ * "Café  Del Mar!" and "café del mar" match; "東京ホテル" and "京都ホテル" stay different.
+ */
 export function norm(s: string | undefined | null): string {
   return (s ?? "")
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .normalize("NFKC")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, " ")
     .trim();
 }
 
@@ -29,12 +31,26 @@ export function observationId(kind: ObservationKind, ...parts: (string | number 
   return `${kind.slice(0, 3)}_${createHash("sha256").update(key).digest("hex").slice(0, 24)}`;
 }
 
+/**
+ * One leg of a flight id: flight number (or the airport pair when the source has none) plus the local
+ * departure day. `departLocal` is the provider's own string, e.g. "2026-12-06T05:55:00".
+ */
+export function legKey(leg: { carrier?: string; number?: string; from: string; to: string; departLocal: string }): string {
+  const no = flightNo(leg.carrier, leg.number);
+  return `${no || `${leg.from}-${leg.to}`}@${leg.departLocal.slice(0, 10)}`;
+}
+
+/**
+ * Flight id. `legs` lists every leg of both directions in order, so two itineraries that share their
+ * first outbound flight but differ on a connection or on the return get different ids. A source that
+ * only knows the first outbound flight (Travelpayouts) passes just that one.
+ */
 export function flightId(o: {
   origin: string;
   destination: string;
   depart_date: string;
   return_date?: string;
-  first_flight?: string;
+  legs?: string[];
 }): string {
-  return observationId("flight", o.origin, o.destination, o.depart_date, o.return_date ?? "oneway", o.first_flight ?? "");
+  return observationId("flight", o.origin, o.destination, o.depart_date, o.return_date ?? "oneway", ...(o.legs ?? []));
 }

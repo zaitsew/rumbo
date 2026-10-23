@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ProfileSchema, WatchSchema, type Observation } from "../src/core/schema";
 import { ALL_SOURCES, createMemoryLedger, describeSources, queriesForWatch, runSources } from "../src/server/sources";
-import { SourceError } from "../src/server/sources/http";
-import { withOffset } from "../src/server/sources/time";
+import { formatMinor, minorExponent, SourceError, toMinor } from "../src/server/sources/http";
+import { offsetLegs, timeZoneFor, withOffset } from "../src/server/sources/time";
 import type { Source, SourceQuery } from "../src/server/sources/types";
 import { flightsVlcLis, NOW } from "./sources-helpers";
 
@@ -146,11 +146,21 @@ describe("queriesForWatch", () => {
   it("route: uses the watch's airports or the profile's, with profile travellers and limits", () => {
     const w = WatchSchema.parse({ ...base, kind: "route", destination: ["LIS"], nights: { min: 3, max: 4 } });
     expect(queriesForWatch(w, profile)).toEqual([
-      { kind: "flights", origin: ["VLC", "ALC"], destination: ["LIS"], window: base.window, nights: { min: 3, max: 4 }, adults: 2, currency: "EUR", max_stops: 1 },
+      { kind: "flights", origin: ["VLC", "ALC"], destination: ["LIS"], window: base.window, nights: { min: 3, max: 4 }, adults: 2, children: 0, child_ages: [], currency: "EUR", max_stops: 1 },
     ]);
     const own = WatchSchema.parse({ ...base, kind: "route", origin: ["MAD"], destination: ["LIS"] });
     expect((queriesForWatch(own, profile)[0] as any).origin).toEqual(["MAD"]);
     expect(queriesForWatch(WatchSchema.parse({ ...base, kind: "route" }), profile)).toEqual([]);
+  });
+
+  it("carries the profile's children into flights and stays, with age 8 when unknown", () => {
+    const fam = ProfileSchema.parse({ home_city: "Valencia", home_airports: ["VLC"], currency: "EUR", travellers: { adults: 2, children: 2 } });
+    const f = queriesForWatch(WatchSchema.parse({ ...base, kind: "route", destination: ["LIS"] }), fam)[0] as any;
+    expect(f).toMatchObject({ adults: 2, children: 2, child_ages: [8, 8] });
+    const a = queriesForWatch(WatchSchema.parse({ ...base, kind: "anywhere" }), fam)[0] as any;
+    expect(a).toMatchObject({ children: 2, child_ages: [8, 8] });
+    const st = queriesForWatch(WatchSchema.parse({ ...base, kind: "place-stays", place: "Lisbon" }), fam)[0] as any;
+    expect(st).toMatchObject({ kind: "stays", adults: 2, children: 2, child_ages: [8, 8] });
   });
 
   it("anywhere: destination 'anywhere'", () => {
@@ -163,7 +173,7 @@ describe("queriesForWatch", () => {
       { kind: "events", place: "Lisbon", country: "PT", window: base.window },
     ]);
     expect(queriesForWatch(WatchSchema.parse({ ...base, kind: "place-stays", place: "Lisbon", nights: { min: 3, max: 5 } }), profile)).toEqual([
-      { kind: "stays", place: "Lisbon", country: "PT", check_in: "2026-12-04", check_out: "2026-12-07", adults: 2, currency: "EUR" },
+      { kind: "stays", place: "Lisbon", country: "PT", check_in: "2026-12-04", check_out: "2026-12-07", adults: 2, children: 0, child_ages: [], currency: "EUR" },
     ]);
     expect(queriesForWatch(WatchSchema.parse({ ...base, kind: "place-activities", place: "Lisbon" }), profile)).toEqual([
       { kind: "activities", place: "Lisbon", country: "PT", date: undefined, currency: "EUR" },
@@ -179,6 +189,38 @@ describe("withOffset", () => {
     expect(withOffset("2026-12-06T06:40:00", "Europe/Lisbon")).toBe("2026-12-06T06:40:00+00:00");
     expect(withOffset("2026-12-06T06:40", "Asia/Kolkata")).toBe("2026-12-06T06:40:00+05:30");
     expect(withOffset("2026-12-06T06:40:00+01:00", "UTC")).toBe("2026-12-06T06:40:00+01:00");
-    expect(withOffset("2026-12-06T06:40:00", "Not/AZone")).toBe("2026-12-06T06:40:00+00:00");
+    expect(withOffset("2026-12-06T06:40:00", "Not/AZone")).toBeUndefined();
+    expect(withOffset("2026-12-06T06:40:00", undefined)).toBeUndefined();
+  });
+
+  it("does not guess a zone for unknown airports or multi-zone countries", () => {
+    expect(timeZoneFor("XXX", "Narnia")).toBeUndefined();
+    expect(timeZoneFor("DEN", "United States")).toBe("America/Denver");
+    expect(timeZoneFor("PHX", "United States")).toBeUndefined();
+    expect(timeZoneFor("VLC", "Spain")).toBe("Europe/Madrid");
+    expect(timeZoneFor("TFS", "Spain")).toBe("Atlantic/Canary");
+  });
+
+  it("offsetLegs returns nothing when a zone is unknown or contradicts the flight time", () => {
+    const seg = { from: "VLC", to: "LIS", departLocal: "2026-12-06T05:55:00", arriveLocal: "2026-12-06T06:40:00", durationMin: 105, tzFrom: "Europe/Madrid", tzTo: "Europe/Lisbon", carrier: "TP", flight_no: "TP1097" };
+    expect(offsetLegs([seg])).toHaveLength(1);
+    expect(offsetLegs([{ ...seg, tzTo: undefined }])).toBeUndefined();
+    expect(offsetLegs([{ ...seg, tzTo: "Asia/Tokyo" }])).toBeUndefined();
+  });
+});
+
+describe("money in minor units", () => {
+  it("uses the ISO 4217 exponent", () => {
+    expect(minorExponent("EUR")).toBe(2);
+    expect(minorExponent("JPY")).toBe(0);
+    expect(minorExponent("KWD")).toBe(3);
+    expect(minorExponent("BHD")).toBe(3);
+    expect(toMinor(36.9, "EUR")).toBe(3690);
+    expect(toMinor("12345", "JPY")).toBe(12345);
+    expect(toMinor(12.345, "KWD")).toBe(12345);
+    expect(toMinor("1.250", "BHD")).toBe(1250);
+    expect(formatMinor(12345, "JPY")).toBe("12345");
+    expect(formatMinor(12345, "KWD")).toBe("12.345");
+    expect(formatMinor(3690, "EUR")).toBe("36.90");
   });
 });

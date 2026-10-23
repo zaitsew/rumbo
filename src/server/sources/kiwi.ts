@@ -1,10 +1,10 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { ObservationSchema, type Observation } from "../../core/schema";
-import { flightId, flightNo } from "./id";
+import { flightId, flightNo, legKey } from "./id";
 import { SourceError, addHours, toMinor } from "./http";
-import { timeZoneFor, withOffset } from "./time";
-import type { Env, SearchContext, Source, SourceQuery } from "./types";
+import { offsetLegs, timeZoneFor, type LocalSegment } from "./time";
+import { childAges, type Env, type SearchContext, type Source, type SourceQuery } from "./types";
 
 /**
  * Kiwi.com public MCP server, https://mcp.kiwi.com, no key. One tool, `search-flight`; its listing is
@@ -26,7 +26,7 @@ export type KiwiCallTool = (args: Record<string, unknown>, ctx: SearchContext) =
 /** The MCP result of `search-flight`: `structuredContent` when present, else the JSON text block. */
 interface KiwiSegment {
   from: string; to: string; fromCity?: string; toCity?: string; fromCountry?: string; toCountry?: string;
-  departureTime: string; arrivalTime: string; carrier?: string; carrierName?: string; flightNumber?: string;
+  departureTime: string; arrivalTime: string; durationSeconds?: number; carrier?: string; carrierName?: string; flightNumber?: string;
 }
 interface KiwiLeg {
   from: string; to: string; departureTime: string; arrivalTime: string; durationSeconds?: number; stops: number;
@@ -57,6 +57,9 @@ export function kiwiArguments(q: Extract<SourceQuery, { kind: "flights" }>, now:
     currency: q.currency,
     sort: "price",
   };
+  // Kiwi takes children aged 2-11 as a count; it has no per-child age.
+  const kids = childAges(q).filter((a) => a >= 2 && a <= 11).length;
+  if (kids) args.children = kids;
   if (to !== from) args.departureDateTo = ddmmyyyy(to);
   if (q.nights) {
     args.nights_in_dst_from = q.nights.min;
@@ -92,23 +95,24 @@ export function mapKiwi(result: KiwiResult, q: Extract<SourceQuery, { kind: "fli
   for (const it of result.itineraries ?? []) {
     if (it.price == null || !it.outbound?.segments?.length) continue;
     const out = it.outbound;
-    const first = out.segments[0]!;
     const last = out.segments[out.segments.length - 1]!;
-    const tz = (s: KiwiSegment, at: "from" | "to") => timeZoneFor(at === "from" ? s.from : s.to, at === "from" ? s.fromCountry : s.toCountry);
-    const legsOf = (leg: KiwiLeg | undefined) =>
+    // Kiwi's times are local with no offset and no UTC twin. Offsets come only from a zone we are sure of,
+    // cross-checked against the segment's own duration; otherwise `legs` stays empty.
+    const localSegs = (leg: KiwiLeg | undefined): LocalSegment[] =>
       (leg?.segments ?? []).map((s) => ({
-        from: s.from, to: s.to,
-        depart_at: withOffset(s.departureTime, tz(s, "from")),
-        arrive_at: withOffset(s.arrivalTime, tz(s, "to")),
-        carrier: s.carrierName ?? s.carrier ?? "",
-        flight_no: flightNo(s.carrier, s.flightNumber) || undefined,
+        from: s.from, to: s.to, departLocal: s.departureTime, arriveLocal: s.arrivalTime,
+        durationMin: s.durationSeconds ? s.durationSeconds / 60 : undefined,
+        tzFrom: timeZoneFor(s.from, s.fromCountry), tzTo: timeZoneFor(s.to, s.toCountry),
+        carrier: s.carrierName ?? s.carrier ?? "", flight_no: flightNo(s.carrier, s.flightNumber) || undefined,
       }));
+    const allSegs = [...(out.segments ?? []), ...(it.inbound?.segments ?? [])];
+    const legKeys = allSegs.map((s) => legKey({ carrier: s.carrier, number: s.flightNumber, from: s.from, to: s.to, departLocal: s.departureTime }));
     const depart_date = out.departureTime.slice(0, 10);
     const return_date = it.inbound?.departureTime.slice(0, 10);
     const place = last.toCity ?? last.to;
     const obs: Observation = {
       kind: "flight",
-      id: flightId({ origin: out.from, destination: out.to, depart_date, return_date, first_flight: flightNo(first.carrier, first.flightNumber) }),
+      id: flightId({ origin: out.from, destination: out.to, depart_date, return_date, legs: legKeys }),
       provenance: { source: "kiwi-mcp", url: it.bookingUrl, seen_at: seenAt, expires_at: expiresAt },
       title: `${out.from} → ${place}, ${depart_date}${return_date ? ` – ${return_date}` : ""}`,
       place,
@@ -119,13 +123,13 @@ export function mapKiwi(result: KiwiResult, q: Extract<SourceQuery, { kind: "fli
       destination: out.to,
       depart_date,
       return_date,
-      price: { amount_minor: Math.round(toMinor(it.price) / pax), currency },
+      price: { amount_minor: Math.round(toMinor(it.price, currency) / pax), currency },
       stops: Math.max(out.stops, it.inbound?.stops ?? 0),
       duration_minutes: out.durationSeconds ? Math.round(out.durationSeconds / 60) : undefined,
-      legs: [...legsOf(out), ...legsOf(it.inbound)],
+      legs: offsetLegs([...localSegs(out), ...localSegs(it.inbound)]) ?? [],
       seller: "Kiwi.com",
     };
-    // Several returns share one outbound flight and so one id; keep the cheapest.
+    // The id covers every leg, so a repeat means the same itinerary listed twice; keep the cheapest.
     const prev = byId.get(obs.id);
     if (!prev || (prev.kind === "flight" && obs.kind === "flight" && obs.price.amount_minor < prev.price.amount_minor)) byId.set(obs.id, obs);
   }

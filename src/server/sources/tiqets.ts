@@ -9,7 +9,8 @@ import type { Env, Source, SourceQuery } from "./types";
  * `Authorization: Token <key>`, query `city_name` or `city_id`, `lang`, `currency`, `page_size` (max 100),
  * `sort`. Default rate limit 15 requests a second. A key made in the affiliate portal reaches the catalogue
  * and availability endpoints; `product_url` carries the affiliate tracking.
- * We filter by `city_name` (the docs call it handy but recommend `city_id`); resolving ids would cost a
+ * The catalogue says nothing about a given day, so activities from Tiqets never carry a `date`; the query's
+ * date is not confirmed availability. We filter by `city_name` (the docs call it handy but recommend `city_id`); resolving ids would cost a
  * page through /cities per lookup.
  */
 export const TIQETS_BASE = "https://api.tiqets.com/v2";
@@ -51,15 +52,14 @@ export function mapTiqets(res: TiqetsResponse, q: ActivityQuery, now: Date): Obs
     const avg = p.ratings?.average;
     out.push(ObservationSchema.parse({
       kind: "activity",
-      id: observationId("activity", p.title, q.place, q.date),
+      id: observationId("activity", p.title, q.place),
       provenance: { source: "tiqets", url: p.product_url, seen_at: seenAt, expires_at: addHours(now, PRICE_TTL_HOURS) },
       title: p.title,
       place: q.place,
       country: p.country_name ?? q.country,
       tags: [],
       book_url: p.product_url,
-      date: q.date,
-      price: typeof p.price === "number" && p.currency ? { amount_minor: toMinor(p.price), currency: p.currency.toUpperCase() } : undefined,
+      price: typeof p.price === "number" && p.currency ? { amount_minor: toMinor(p.price, p.currency), currency: p.currency.toUpperCase() } : undefined,
       duration_minutes: minutesOf(p.duration),
       rating: typeof avg === "number" && avg > 0 ? Math.min(5, avg) : undefined,
     }));

@@ -55,7 +55,7 @@ export function mapViator(res: ViatorSearchResponse, q: ActivityQuery, currency:
       tags: [],
       book_url: p.productUrl,
       date: q.date,
-      price: typeof from === "number" ? { amount_minor: toMinor(from), currency: (p.pricing?.currency ?? currency).toUpperCase() } : undefined,
+      price: typeof from === "number" ? { amount_minor: toMinor(from, p.pricing?.currency ?? currency), currency: (p.pricing?.currency ?? currency).toUpperCase() } : undefined,
       duration_minutes: dur && dur > 0 ? dur : undefined,
       rating: p.reviews?.combinedAverageRating ? Math.min(5, p.reviews.combinedAverageRating) : undefined,
     }));

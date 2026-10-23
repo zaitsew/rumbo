@@ -1,5 +1,5 @@
 import { ObservationSchema, type Observation } from "../../core/schema";
-import { flightId, flightNo } from "./id";
+import { flightId, flightNo, legKey } from "./id";
 import { SourceError, addHours, requestJson, toMinor } from "./http";
 import { placeOfAirport } from "./places";
 import type { Env, Source, SourceQuery } from "./types";
@@ -105,7 +105,7 @@ export function mapTravelpayouts(res: TpResponse, q: FlightQuery, now: Date, mar
     const url = bookUrl(it.link, marker);
     out.push(ObservationSchema.parse({
       kind: "flight",
-      id: flightId({ origin, destination, depart_date, return_date, first_flight: it.airline && it.flight_number ? flightNo(it.airline, String(it.flight_number)) : "" }),
+      id: flightId({ origin, destination, depart_date, return_date, legs: it.airline && it.flight_number ? [legKey({ carrier: it.airline, number: String(it.flight_number), from: origin, to: destination, departLocal: it.departure_at })] : [] }),
       provenance: { source: "travelpayouts", url, seen_at: seenAt, expires_at: it.expires_at ?? addHours(now, CACHE_TTL_HOURS) },
       title: `${origin} → ${place.city}, ${depart_date}${return_date ? ` – ${return_date}` : ""} (cached fare)`,
       place: place.city,
@@ -113,7 +113,7 @@ export function mapTravelpayouts(res: TpResponse, q: FlightQuery, now: Date, mar
       tags: [],
       book_url: url,
       origin, destination, depart_date, return_date,
-      price: { amount_minor: toMinor(it.price), currency },
+      price: { amount_minor: toMinor(it.price, currency), currency },
       stops,
       duration_minutes: it.duration_to ?? it.duration ?? undefined,
       legs: [],

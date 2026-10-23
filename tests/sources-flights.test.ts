@@ -123,6 +123,12 @@ describe("duffel", () => {
     expect(seen.some((s) => /orders/.test(s.url))).toBe(false);
   });
 
+  it("sends children by age, defaulting to 8", () => {
+    const withKids = requestBody({ ...q, adults: 2, children: 2, child_ages: [4] }, { origin: "VLC", destination: "LIS" }, "2026-10-23");
+    expect(withKids.data.passengers).toEqual([{ type: "adult" }, { type: "adult" }, { age: 4 }, { age: 8 }]);
+    expect(requestBody(q, { origin: "VLC", destination: "LIS" }, "2026-10-23").data.passengers.every((p: any) => p.type === "adult")).toBe(true);
+  });
+
   it("parses ISO durations", () => {
     expect(isoMinutes("PT02H26M")).toBe(146);
     expect(isoMinutes("PT45M")).toBe(45);
@@ -131,11 +137,26 @@ describe("duffel", () => {
 });
 
 describe("flight ids", () => {
+  const base = { origin: "VLC", destination: "LIS", depart_date: "2026-12-06", return_date: "2026-12-10" };
   it("are the same for the same itinerary from two sources and ignore the price", () => {
-    const k = flightId({ origin: "VLC", destination: "LIS", depart_date: "2026-12-06", return_date: "2026-12-10", first_flight: "TP1097" });
-    const t = flightId({ origin: "vlc", destination: "LIS", depart_date: "2026-12-06", return_date: "2026-12-10", first_flight: "tp1097" });
+    const k = flightId({ ...base, legs: ["TP1097@2026-12-06", "TP1098@2026-12-10"] });
+    const t = flightId({ ...base, origin: "vlc", legs: ["TP1097@2026-12-06", "TP1098@2026-12-10"] });
     expect(k).toBe(t);
     expect(k).toMatch(/^fli_[0-9a-f]{24}$/);
-    expect(flightId({ origin: "VLC", destination: "LIS", depart_date: "2026-12-07", return_date: "2026-12-10", first_flight: "TP1097" })).not.toBe(k);
+    expect(flightId({ ...base, depart_date: "2026-12-07", legs: ["TP1097@2026-12-07", "TP1098@2026-12-10"] })).not.toBe(k);
+  });
+
+  it("differ when only the return flight or an onward connection differs", () => {
+    const out = "TP1097@2026-12-06";
+    const a = flightId({ ...base, legs: [out, "TP1098@2026-12-10"] });
+    const b = flightId({ ...base, legs: [out, "TP1100@2026-12-10"] });
+    const c = flightId({ ...base, legs: [out, "IB123@2026-12-06", "TP1098@2026-12-10"] });
+    expect(new Set([a, b, c]).size).toBe(3);
+  });
+
+  it("keep letters of every script", () => {
+    const ids = ["東京", "Москва", "القاهرة", "Zürich"].map((destination) => flightId({ ...base, destination }));
+    expect(new Set(ids).size).toBe(4);
+    expect(flightId({ ...base, destination: "Ｚürich" })).toBe(flightId({ ...base, destination: "zürich" })); // NFKC folds full-width letters
   });
 });
