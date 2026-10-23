@@ -15,7 +15,7 @@ export function flight(id: string, over: Record<string, unknown> = {}): Observat
     title: "VLC to LIS",
     place: "Lisbon",
     tags: [],
-    provenance: { source: "kiwi-mcp", seen_at: "2026-10-23T08:00:00+02:00", expires_at: "2026-10-25T08:00:00+02:00" },
+    provenance: { source: "kiwi-mcp", url: "https://example.com/offer", seen_at: "2026-10-23T08:00:00+02:00", expires_at: "2026-10-25T08:00:00+02:00" },
     origin: "VLC",
     destination: "LIS",
     depart_date: "2026-12-06",

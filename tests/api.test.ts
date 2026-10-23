@@ -148,9 +148,9 @@ describe("observations", () => {
 
   it("reports an older copy as skipped_older and keeps the newer one", async () => {
     const at = (iso: string, cents: number) =>
-      flight("older1", { price: { amount_minor: cents, currency: "EUR" }, provenance: { source: "x", seen_at: iso, expires_at: "2099-01-01T00:00:00Z" } });
-    await mods.observations!.POST!(req("/observations", { method: "POST", body: json([at("2026-10-24T10:00:00Z", 7000)]) }));
-    const r = await mods.observations!.POST!(req("/observations", { method: "POST", body: json([at("2026-10-23T10:00:00Z", 9900)]) }));
+      flight("older1", { price: { amount_minor: cents, currency: "EUR" }, provenance: { source: "x", url: "https://example.com/o", seen_at: iso, expires_at: "2099-01-01T00:00:00Z" } });
+    await mods.observations!.POST!(req("/observations", { method: "POST", body: json([at("2026-10-22T10:00:00Z", 7000)]) }));
+    const r = await mods.observations!.POST!(req("/observations", { method: "POST", body: json([at("2026-10-21T10:00:00Z", 9900)]) }));
     expect(await r.json()).toMatchObject({ accepted: 1, inserted: 0, updated: 0, skipped_older: 1 });
     const { observations } = await (await mods.observations!.GET!(req("/observations?kinds=flight&limit=1000"))).json();
     expect(observations.find((o: { id: string }) => o.id === "older1").price.amount_minor).toBe(7000);
@@ -165,7 +165,7 @@ describe("observations", () => {
   });
 
   it("lists with filters and validates the query", async () => {
-    await mods.observations!.POST!(req("/observations", { method: "POST", body: json({ observations: [flight("z1", { provenance: { source: "x", seen_at: "2026-01-01T00:00:00Z", expires_at: "2026-01-02T00:00:00Z" } })] }) }));
+    await mods.observations!.POST!(req("/observations", { method: "POST", body: json({ observations: [flight("z1", { provenance: { source: "x", url: "https://example.com/o", seen_at: "2026-01-01T00:00:00Z", expires_at: "2026-01-02T00:00:00Z" } })] }) }));
     const fresh = await (await mods.observations!.GET!(req("/observations?kinds=flight&limit=1000"))).json();
     expect(fresh.observations.find((o: { id: string }) => o.id === "z1")).toBeUndefined();
     const stale = await (await mods.observations!.GET!(req("/observations?kinds=flight&include_stale=1&limit=1000"))).json();

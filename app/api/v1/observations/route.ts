@@ -1,5 +1,7 @@
 import { ObservationSchema, type ObservationKind } from "../../../../src/core/schema";
-import { ApiError, readJson, route, zodDetail } from "../../../../src/server/api";
+import { ApiError, readJson, route } from "../../../../src/server/api";
+import { cleanAgent } from "../../../../src/server/mcp/tool";
+import { ingestObservations } from "../../../../src/server/observe";
 
 export const dynamic = "force-dynamic";
 
@@ -25,21 +27,24 @@ export const GET = route((req, { store }) => {
   return { observations };
 });
 
-/** Body: an array of observations (or `{ observations: [...] }`), at most 200. Valid ones are saved even when others are rejected; one older than the stored copy is `skipped_older`. */
+/**
+ * Body: an array of observations (or `{ observations: [...], agent?, checked_watch_ids? }`), at most 200.
+ * Rows are checked one by one: valid ones are saved even when others are rejected. `id` is optional (the
+ * server derives it) and a price needs `provenance.url`. `agent` (body, `?agent=` or X-Rumbo-Agent) is
+ * stamped into provenance. `accepted` counts valid rows; `skipped_older` of them were not stored because
+ * a newer sighting exists. Watches named by `watch_id` or `checked_watch_ids` are marked as run.
+ */
 export const POST = route(async (req, { store }) => {
   const body = await readJson(req);
-  const list = Array.isArray(body) ? body : (body as { observations?: unknown } | null)?.observations;
+  const obj = !Array.isArray(body) && typeof body === "object" && body !== null ? (body as { observations?: unknown; agent?: unknown; checked_watch_ids?: unknown }) : null;
+  const list = Array.isArray(body) ? body : obj?.observations;
   if (!Array.isArray(list)) throw new ApiError(400, "invalid_body", "Send an array of observations.");
   if (list.length > MAX_PER_CALL) throw new ApiError(413, "too_many", `At most ${MAX_PER_CALL} observations per call; got ${list.length}.`);
-
-  const valid: unknown[] = [];
-  const rejected: { index: number; error: string }[] = [];
-  list.forEach((item, index) => {
-    const parsed = ObservationSchema.safeParse(item);
-    if (parsed.success) valid.push(parsed.data);
-    else rejected.push({ index, error: zodDetail(parsed.error).map((d) => `${d.path || "(root)"}: ${d.message}`).join("; ") });
-  });
-  const { inserted, updated, skipped_older } = store.upsertObservations(valid);
-  // `accepted` counts valid observations; `skipped_older` of them were not stored because a newer copy exists.
-  return { accepted: valid.length, inserted, updated, skipped_older, rejected };
+  const agent =
+    cleanAgent(typeof obj?.agent === "string" ? obj.agent : null) ??
+    cleanAgent(new URL(req.url).searchParams.get("agent")) ??
+    cleanAgent(req.headers.get("x-rumbo-agent")) ??
+    undefined;
+  const checked = Array.isArray(obj?.checked_watch_ids) ? obj.checked_watch_ids.filter((x): x is string => typeof x === "string").slice(0, 50) : undefined;
+  return ingestObservations(store, list, { agent, checkedWatchIds: checked });
 });
