@@ -421,6 +421,7 @@ export function pickDates(plan: Plan, candidate: DestinationCandidate, stored: O
   }
   const to = window.to;
   if (to <= from) throw new PlanError(`The window ${window.from} to ${window.to} is too short for a stay: widen it or give the dates.`);
+  if (clashes(from, to, busy)) throw new PlanError(`The window ${window.from} to ${window.to} clashes with your busy dates: widen it or give the dates.`);
   return { from, to };
 }
 
