@@ -116,6 +116,7 @@ if [ "$DRY" = 1 ]; then
 [dry] ssh ${HOST} 'bash \$tmp/add-product.sh ${NAME} ${PORT} --from \$tmp/droplet --domain ${DOMAIN}; rm -rf \$tmp'
 == every run
 [dry] ssh ${HOST} 'cd /srv && docker compose up -d --build ${NAME} && docker image prune -f --filter label=app=rumbo'
+[dry] ssh ${HOST} 'cd /srv && docker compose up -d ${NAME}-scheduler'   # the hourly collector; a warning if the box predates it
 DRYEOF
 else
   if "${SSH[@]}" "$HOST" "test -f ${REMOTE_DIR}/docker-compose.yml"; then
@@ -131,6 +132,9 @@ else
     echo "    ssh ${HOST} 'cd /srv && docker compose up -d ${NAME}'"
   fi
   "${SSH[@]}" "$HOST" "cd /srv && docker compose up -d --build ${NAME} && docker image prune -f --filter label=app=rumbo >/dev/null"
+  # The hourly collector. A box rendered before it existed has no such service: say so, do not fail.
+  "${SSH[@]}" "$HOST" "cd /srv && docker compose up -d ${NAME}-scheduler" >/dev/null 2>&1 \
+    || echo "  note: no ${NAME}-scheduler service on the box; add it from deploy/droplet/docker-compose.fragment.yml (see deploy/droplet/README.md)" >&2
 fi
 
 # --- 5. Wait for it to answer ------------------------------------------------

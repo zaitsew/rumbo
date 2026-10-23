@@ -306,6 +306,17 @@ export function createStore(db: Db, userId: string = OWNER) {
       ).run(userId, watch.id, JSON.stringify(watch));
       return watch;
     },
+    /**
+     * Stamp the run time on a watch and touch nothing else. A collection reads its watches, spends
+     * seconds in the sources, and must not write the stale copy back over an edit, a pause or a delete
+     * made meanwhile; a deleted watch stays deleted. Returns whether a row changed.
+     */
+    markWatchRun(id: string, at: string): boolean {
+      const res = db
+        .prepare("UPDATE watches SET json = json_set(json, '$.last_run_at', ?) WHERE user_id = ? AND id = ?")
+        .run(at, userId, id);
+      return Number(res.changes) > 0;
+    },
     deleteWatch(id: string): boolean {
       const res = db.prepare("DELETE FROM watches WHERE user_id = ? AND id = ?").run(userId, id);
       return Number(res.changes) > 0;
@@ -417,6 +428,14 @@ export function createStore(db: Db, userId: string = OWNER) {
       ).run(userId, plan.id, JSON.stringify(plan), utc(now));
       return plan;
     },
+    /** Save a plan only while the stored copy is not archived. Returns null when it is (or is gone). */
+    putPlanUnlessArchived(input: unknown, now: Date = new Date()): Plan | null {
+      const plan = PlanSchema.parse(input);
+      const res = db
+        .prepare("UPDATE plans SET json = ?, updated_at = ? WHERE user_id = ? AND id = ? AND json_extract(json, '$.status') != 'archived'")
+        .run(JSON.stringify(plan), utc(now), userId, plan.id);
+      return Number(res.changes) > 0 ? plan : null;
+    },
     listPlans(): Plan[] {
       return parseAll(rows(db, "SELECT json FROM plans WHERE user_id = ? ORDER BY updated_at DESC, id", userId), (j) => PlanSchema.parse(j), "plan");
     },
@@ -425,7 +444,8 @@ export function createStore(db: Db, userId: string = OWNER) {
     usage(now: Date = new Date()): Record<string, string | number> {
       const week = utc(new Date(now.getTime() - 7 * 86_400_000));
       const n = (sql: string, ...p: SQLInputValue[]) => Number(one(db, sql, ...p)?.n ?? 0);
-      const last = one(db, "SELECT MAX(finished_at) AS at FROM runs WHERE ok = 1")?.at;
+      // Plan notices (id "plan:...") record what a source did for a plan; they are not collector runs.
+      const last = one(db, "SELECT MAX(finished_at) AS at FROM runs WHERE ok = 1 AND id NOT LIKE 'plan:%'")?.at;
       return {
         observations: n("SELECT COUNT(*) AS n FROM observations WHERE user_id = ?", userId),
         observations_7d: n("SELECT COUNT(*) AS n FROM observations WHERE user_id = ? AND first_seen_at >= ?", userId, week),
