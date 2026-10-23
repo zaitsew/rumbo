@@ -4,7 +4,6 @@ import { countryOfCity } from "./places";
 import { duffel } from "./duffel";
 import { kiwi } from "./kiwi";
 import { liteapi } from "./liteapi";
-import { ticketmaster } from "./ticketmaster";
 import { tiqets } from "./tiqets";
 import { travelpayouts } from "./travelpayouts";
 import { viator } from "./viator";
@@ -13,10 +12,10 @@ import { OBSERVATION_KIND_OF, type CallLedger, type CallRecord, type Env, type S
 export * from "./types";
 export { createMemoryLedger } from "./ledger";
 export { observationId, flightId, flightNo } from "./id";
-export { kiwi, travelpayouts, ticketmaster, viator, tiqets, liteapi, duffel };
+export { kiwi, travelpayouts, viator, tiqets, liteapi, duffel };
 
 /** Free sources first, paid last. Paid ones stay disabled until their env flag approves the price (D2). */
-export const ALL_SOURCES: Source[] = [kiwi, travelpayouts, ticketmaster, viator, tiqets, liteapi, duffel];
+export const ALL_SOURCES: Source[] = [kiwi, travelpayouts, viator, tiqets, liteapi, duffel];
 
 /** What `./check.sh` and the agents page print: each source, whether it runs, and what to set if not. */
 export function describeSources(env: Env, sources: Source[] = ALL_SOURCES) {

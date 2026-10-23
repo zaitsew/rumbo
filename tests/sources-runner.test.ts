@@ -121,10 +121,9 @@ describe("runSources", () => {
 
 describe("registry", () => {
   it("lists seven sources, free before paid, with caps", () => {
-    expect(ALL_SOURCES.map((s) => s.name)).toEqual(["kiwi-mcp", "travelpayouts", "ticketmaster", "viator", "tiqets", "liteapi", "duffel"]);
+    expect(ALL_SOURCES.map((s) => s.name)).toEqual(["kiwi-mcp", "travelpayouts", "viator", "tiqets", "liteapi", "duffel"]);
     expect(ALL_SOURCES.filter((s) => s.paid).map((s) => s.name)).toEqual(["liteapi", "duffel"]);
     expect(ALL_SOURCES.find((s) => s.name === "kiwi-mcp")!.dailyCap).toBe(60);
-    expect(ALL_SOURCES.find((s) => s.name === "ticketmaster")!.dailyCap).toBe(1000);
   });
 
   it("with an empty environment only Kiwi runs, and every other source says what to set", () => {

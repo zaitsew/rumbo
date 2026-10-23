@@ -15,7 +15,7 @@ export interface JsonRequest {
 }
 
 /**
- * One JSON request. Errors name the host and path but never the query string: Ticketmaster takes its key
+ * One JSON request. Errors name the host and path but never the query string: a provider may take its key
  * there, and error text ends up in logs and the `runs` table.
  */
 export async function requestJson<T>(ctx: SearchContext, req: JsonRequest): Promise<T> {

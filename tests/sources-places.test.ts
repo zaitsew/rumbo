@@ -1,59 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ObservationSchema } from "../src/core/schema";
 import { liteapi, createLiteapiSource, mapLiteapi } from "../src/server/sources/liteapi";
-import { mapTicketmaster, requestUrl as tmUrl, ticketmaster } from "../src/server/sources/ticketmaster";
 import { mapTiqets, minutesOf, requestUrl as tqUrl, tiqets } from "../src/server/sources/tiqets";
 import { createViatorSource, mapViator, pickDestination } from "../src/server/sources/viator";
 import { fakeFetch, fixture, NOW } from "./sources-helpers";
 
-const events = { kind: "events" as const, place: "Valencia", country: "ES", window: { from: "2026-12-01", to: "2026-12-31" } };
 const acts = { kind: "activities" as const, place: "Valencia", country: "ES", currency: "EUR" };
 const stays = { kind: "stays" as const, place: "Lisbon", check_in: "2026-12-05", check_out: "2026-12-09", adults: 2, currency: "EUR" };
-
-describe("ticketmaster", () => {
-  const res = fixture("ticketmaster-events.json");
-  const obs = mapTicketmaster(res, events, NOW);
-
-  it("maps events, skips cancelled ones, tags from classifications", () => {
-    expect(obs.map((o) => o.title)).toEqual([
-      "Café Tacvba - Live in Valencia", "Valencia Basket vs Real Madrid", "Ballet Nacional: El Lago de los Cisnes", "Winter Beats Festival 2026",
-    ]);
-    expect(obs.map((o) => o.tags)).toEqual([["concerts"], ["sport-events"], ["culture"], ["concerts", "festivals"]]);
-    for (const o of obs) expect(() => ObservationSchema.parse(o)).not.toThrow();
-  });
-
-  it("fills date, venue, price and provenance", () => {
-    const o = obs[0]!;
-    if (o.kind !== "event") throw new Error();
-    expect(o).toMatchObject({ date: "2026-12-12", venue: "Roig Arena", place: "Valencia", country: "ES", price_from: { amount_minor: 3850, currency: "EUR" } });
-    expect(o.provenance).toMatchObject({ source: "ticketmaster", url: o.book_url, seen_at: NOW.toISOString(), expires_at: "2026-12-12T19:00:00Z" });
-    const ballet = obs[2]!;
-    if (ballet.kind !== "event") throw new Error();
-    expect(ballet.end_date).toBe("2026-12-29");
-    expect(ballet.provenance.expires_at).toBe("2026-12-29T23:59:59Z");
-    expect(obs[1]!.kind === "event" && obs[1]!.price_from).toBeUndefined();
-  });
-
-  it("builds the documented query and never leaks the key into errors", async () => {
-    const u = new URL(tmUrl(events, "KEY123"));
-    expect(Object.fromEntries(u.searchParams)).toMatchObject({ apikey: "KEY123", city: "Valencia", countryCode: "ES", startDateTime: "2026-12-01T00:00:00Z", endDateTime: "2026-12-31T23:59:59Z" });
-    const { fetch } = fakeFetch(() => ({ status: 401, body: { fault: { faultstring: "Invalid ApiKey" } } }));
-    const err = await ticketmaster.search(events, { now: NOW, fetch, env: { TICKETMASTER_API_KEY: "KEY123" } }).catch((e) => e);
-    expect(err.message).toMatch(/HTTP 401/);
-    expect(err.message).not.toContain("KEY123");
-  });
-
-  it("has a 1000 call cap and names the env var", () => {
-    expect(ticketmaster.dailyCap).toBe(1000);
-    expect(ticketmaster.why_disabled({})).toMatch(/TICKETMASTER_API_KEY/);
-    expect(ticketmaster.enabled({ TICKETMASTER_API_KEY: "k" })).toBe(true);
-  });
-
-  it("gives a stable id regardless of price or url", () => {
-    const again = mapTicketmaster(structuredClone(res), events, new Date(NOW.getTime() + 86_400_000));
-    expect(again.map((o) => o.id)).toEqual(obs.map((o) => o.id));
-  });
-});
 
 describe("viator", () => {
   const dests = fixture("viator-destinations.json");

@@ -36,7 +36,6 @@ function line(o: Observation): string {
 const queries: Record<string, SourceQuery> = {
   "kiwi-mcp": { kind: "flights", origin: ["VLC"], destination: ["LIS"], window: { from, to }, nights: { min: 3, max: 4 }, adults: 1, currency: "EUR", max_stops: 1 },
   travelpayouts: { kind: "flights", origin: ["VLC"], destination: ["LIS"], window: { from, to: addDays(from, 25) }, adults: 1, currency: "EUR" },
-  ticketmaster: { kind: "events", place: "Valencia", country: "ES", window: { from: today, to: addDays(today, 45) } },
   viator: { kind: "activities", place: "Valencia", country: "ES", currency: "EUR" },
   tiqets: { kind: "activities", place: "Valencia", country: "ES", currency: "EUR" },
   liteapi: { kind: "stays", place: "Lisbon", country: "PT", check_in: from, check_out: addDays(from, 3), adults: 1, currency: "EUR" },
