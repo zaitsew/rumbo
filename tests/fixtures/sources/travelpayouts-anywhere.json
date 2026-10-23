@@ -1,0 +1,38 @@
+{
+  "_synthetic": true,
+  "success": true,
+  "currency": "eur",
+  "data": [
+    {
+      "origin": "VLC",
+      "destination": "BER",
+      "origin_airport": "VLC",
+      "destination_airport": "BER",
+      "price": 49,
+      "airline": "FR",
+      "flight_number": "1150",
+      "departure_at": "2026-12-04T06:30:00+01:00",
+      "return_at": "2026-12-08T20:00:00+01:00",
+      "transfers": 0,
+      "return_transfers": 0,
+      "duration": 170,
+      "link": "/search/VLC0412BER08121"
+    },
+    {
+      "origin": "VLC",
+      "destination": "ZZZ",
+      "origin_airport": "VLC",
+      "destination_airport": "ZZZ",
+      "price": 33,
+      "airline": "XX",
+      "flight_number": "1",
+      "departure_at": "2026-12-05T06:30:00+01:00",
+      "return_at": "2026-12-08T20:00:00+01:00",
+      "transfers": 0,
+      "return_transfers": 0,
+      "duration": 90,
+      "link": "/search/VLC0512ZZZ08121",
+      "expires_at": "2026-10-20T00:00:00+00:00"
+    }
+  ]
+}
