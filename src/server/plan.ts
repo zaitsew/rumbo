@@ -400,18 +400,31 @@ export function archivePlan(userId: string, id: string, deps: PlanDeps = {}): Pl
 
 export interface TripDates { from: string; to: string }
 
-/** The dates the owner gave, else the cheapest fare found for the place, else the window start plus the shortest stay. */
-export function pickDates(plan: Plan, candidate: DestinationCandidate, stored: Observation[], given?: TripDates, currency = "EUR"): TripDates {
+/**
+ * The dates the owner gave, else the cheapest fare found for the place from the requested origins, else
+ * the window start plus the shortest stay, cut at the window's end. `origins` limits which cached fares
+ * count (a MAD fare must not set the dates of a VLC trip); `today` keeps the pick out of the past.
+ */
+export function pickDates(plan: Plan, candidate: DestinationCandidate, stored: Observation[], given?: TripDates, currency = "EUR", origins?: string[], today?: string): TripDates {
   if (given) return given;
-  const fares = stored.filter((o): o is Extract<Observation, { kind: "flight" }> => o.kind === "flight" && !!o.return_date && (candidate.airports.includes(o.destination) || norm(o.place) === norm(candidate.place)));
+  const { window, nights } = plan.request;
+  const fares = stored.filter(
+    (o): o is Extract<Observation, { kind: "flight" }> =>
+      o.kind === "flight" &&
+      !!o.return_date &&
+      (!origins?.length || origins.includes(o.origin)) &&
+      (candidate.airports.includes(o.destination) || norm(o.place) === norm(candidate.place)),
+  );
   const fitting = fares.filter((o) => {
-    const nights = daysBetween(o.depart_date, o.return_date!);
-    return o.depart_date >= plan.request.window.from && o.return_date! <= plan.request.window.to && nights >= plan.request.nights.min && nights <= plan.request.nights.max;
+    const n = daysBetween(o.depart_date, o.return_date!);
+    return o.depart_date >= window.from && o.return_date! <= window.to && n >= nights.min && n <= nights.max && (!today || o.depart_date >= today);
   });
   const best = fitting.sort((a, b) => sameCurrencyFirst(a.price, currency) - sameCurrencyFirst(b.price, currency) || a.price.amount_minor - b.price.amount_minor)[0];
   if (best) return { from: best.depart_date, to: best.return_date! };
-  const from = plan.request.window.from;
-  return { from, to: addDays(from, plan.request.nights.min) };
+  const from = today && today > window.from && today <= window.to ? today : window.from;
+  const to = addDays(from, nights.min) > window.to ? window.to : addDays(from, nights.min);
+  if (to <= from) throw new PlanError(`The window ${window.from} to ${window.to} is too short for a stay: widen it or give the dates.`);
+  return { from, to };
 }
 
 function validDates(d: TripDates, today: string): string | null {
@@ -446,9 +459,12 @@ const inRange = (day: string, from: string, to: string) => day >= from && day <=
 async function planPlace(ctx: Ctx, plan: Plan, profile: Profile, candidate: DestinationCandidate, given?: TripDates): Promise<Plan> {
   const r = plan.request;
   const stored = ctx.store.listObservations({ kinds: ["flight"], limit: 1000, now: ctx.now });
-  const dates = pickDates(plan, candidate, stored, given, profile.currency);
-  const nights = Math.max(1, daysBetween(dates.from, dates.to));
   const origins = r.origin?.length ? r.origin : profile.home_airports;
+  const dates = pickDates(plan, candidate, stored, given, profile.currency, origins, ctx.today);
+  // Dates the planner picked (from an old saved plan, say) pass the same checks as dates the owner typed.
+  const badDates = validDates(dates, ctx.today);
+  if (badDates) throw new PlanError(`${badDates} Change the window and choose the place again.`);
+  const nights = Math.max(1, daysBetween(dates.from, dates.to));
   const adults = r.travellers?.adults ?? profile.travellers.adults;
   const children = r.travellers?.children ?? 0;
   const iso2 = countryOfCity(candidate.place);
@@ -517,10 +533,14 @@ async function planPlace(ctx: Ctx, plan: Plan, profile: Profile, candidate: Dest
     needs: [...new Set([...r.needs, "car"])],
   });
 
-  const next = ctx.store.putPlan(
+  // The sources took seconds; the owner may have archived this plan in another tab meanwhile. The save
+  // is conditional on the plan not being archived, so a finished search never brings it back.
+  const saved = ctx.store.putPlanUnlessArchived(
     PlanSchema.parse({ ...plan, status: "ready", chosen: candidate.place, dates, sections, links, candidates: plan.candidates.some((c) => c.place === candidate.place) ? plan.candidates : [...plan.candidates, candidate] }),
     ctx.now,
   );
+  if (!saved) throw new PlanError("That plan was archived while it was being searched.");
+  const next = saved;
   clearNotices(ctx.store, plan.id, "choose");
   saveNotices(ctx.store, plan.id, "choose", [...extra, ...notices], ctx.now);
   return next;

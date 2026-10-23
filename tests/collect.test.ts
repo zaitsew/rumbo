@@ -81,17 +81,63 @@ describe("collectDue", () => {
     expect(store.listWatches().every((w) => w.last_run_at)).toBe(true);
   });
 
-  it("leaves last_run_at alone when every source fails or is off, and keeps the error in the run", async () => {
+  it("stamps a watch whose source failed (so the batch moves on), keeps the error in the run, and leaves an all-off watch alone", async () => {
     store.upsertWatch(watch("a", { label: "Lisbon fares" }));
     const broken = fakeSource({ name: "broken", kinds: ["flight"], search: () => { throw new Error("HTTP 500"); } });
     const r = await collectDue("owner", NOW, { store, sources: [broken], env: {}, ledger: memoryLedger() });
     expect(r).toMatchObject({ watches_run: 0, observations: 0 });
-    expect(store.getWatch("a")!.last_run_at).toBeUndefined();
+    expect(store.getWatch("a")!.last_run_at).toBe(NOW.toISOString()); // attempted: waits its interval
     expect(listRuns(db)[0]!.error).toMatch(/Lisbon fares \/ broken: HTTP 500/);
 
+    store.upsertWatch(watch("b", { label: "Prague fares", destination: ["PRG"] }));
     const off = fakeFlights("off", { enabled: false });
     expect((await collectDue("owner", NOW, { store, sources: [off], env: {}, ledger: memoryLedger() })).watches_run).toBe(0);
-    expect(store.getWatch("a")!.last_run_at).toBeUndefined();
+    expect(store.getWatch("b")!.last_run_at).toBeUndefined(); // nothing was called: no stamp
+  });
+
+  it("does not let watches without an enabled source take the batch from a runnable one", async () => {
+    for (let i = 0; i < MAX_WATCHES_PER_COLLECT; i++) store.upsertWatch(watch(`a${String(i).padStart(2, "0")}`, { kind: "place-events", place: "Valencia", origin: [], destination: [] }));
+    store.upsertWatch(watch("zz-route", { last_run_at: hoursAgo(30) })); // older stamp than "never": would sort after them
+    const events = fakeEvents("sawk-fake", { enabled: false });
+    const flights = fakeFlights();
+    const r = await collectDue("owner", NOW, { store, sources: [flights, events], env: {}, ledger: memoryLedger() });
+    expect(r.watches_run).toBe(1);
+    expect(store.getWatch("zz-route")!.last_run_at).toBe(NOW.toISOString());
+  });
+
+  it("rotates the batch: watches that failed are stamped, so the next call reaches the ones behind them", async () => {
+    const total = MAX_WATCHES_PER_COLLECT + 3;
+    for (let i = 0; i < total; i++) store.upsertWatch(watch(`w${String(i).padStart(2, "0")}`));
+    const broken = fakeSource({ name: "broken", kinds: ["flight"], search: () => { throw new Error("HTTP 500"); } });
+    await collectDue("owner", NOW, { store, sources: [broken], env: {}, ledger: memoryLedger() });
+    expect(store.listWatches().filter((w) => !w.last_run_at)).toHaveLength(3);
+    const flights = fakeFlights();
+    await collectDue("owner", NOW, { store, sources: [flights], env: {}, ledger: memoryLedger() });
+    expect(flights.queries).toHaveLength(3);
+    expect(store.listWatches().every((w) => w.last_run_at)).toBe(true);
+  });
+
+  it("writes only the run time: an edit, a pause or a delete made during the run survives", async () => {
+    store.upsertWatch(watch("edit", { label: "before", destination: ["LIS"] }));
+    store.upsertWatch(watch("pause", { destination: ["PRG"] }));
+    store.upsertWatch(watch("gone", { destination: ["ATH"] }));
+    const meddling = fakeSource({
+      name: "meddling",
+      kinds: ["flight"],
+      search: async () => {
+        // The owner edits, pauses and deletes while the collector waits on the source.
+        const edit = store.getWatch("edit");
+        if (edit) store.upsertWatch({ ...edit, label: "after", every_hours: 3 });
+        const pause = store.getWatch("pause");
+        if (pause) store.upsertWatch({ ...pause, active: false });
+        store.deleteWatch("gone");
+        return [];
+      },
+    });
+    await collectDue("owner", NOW, { store, sources: [meddling], env: {}, ledger: memoryLedger() });
+    expect(store.getWatch("edit")).toMatchObject({ label: "after", every_hours: 3, last_run_at: NOW.toISOString() });
+    expect(store.getWatch("pause")).toMatchObject({ active: false });
+    expect(store.getWatch("gone")).toBeNull();
   });
 
   it("sends place-events watches to the events source", async () => {

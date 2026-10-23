@@ -39,6 +39,7 @@ const CASES: Case[] = [
   { text: "this weekend", expect: { window: { from: "2026-10-23", to: "2026-10-25" }, nights: { min: 2, max: 2 } } },
   { text: "this long weekend", expect: { window: { from: "2026-10-23", to: "2026-10-26" }, nights: { min: 3, max: 3 } } },
   { text: "5-9 December in Rome", expect: { destination: "Rome", window: { from: "2026-12-05", to: "2026-12-09" }, nights: { min: 4, max: 4 } } },
+  { text: "Lisbon December 5–9 2028", expect: { destination: "Lisbon", window: { from: "2028-12-05", to: "2028-12-09" }, nights: { min: 4, max: 4 } } },
   { text: "from 28 Nov to 3 Dec in Prague", expect: { destination: "Prague", window: { from: "2026-11-28", to: "2026-12-03" }, nights: { min: 5, max: 5 } } },
   { text: "Dec 28 to Jan 3 ski trip with 2 kids and my wife", expect: { window: { from: "2026-12-28", to: "2027-01-03" }, interests: ["ski"], travellers: { adults: 2, children: 2 } } },
   { text: "2026-12-05 to 2026-12-09, 3 adults", expect: { window: { from: "2026-12-05", to: "2026-12-09" }, travellers: { adults: 3, children: 0 } } },

@@ -19,7 +19,11 @@ function int(fd: FormData, name: string): number | undefined | null {
   return Number.isInteger(n) ? n : null;
 }
 
-export function parsePlanForm(fd: FormData, currency: string): FormResult<StartInput> {
+/**
+ * `travellers` are the profile's defaults: a form that fills only one of the two counts keeps the other
+ * from the profile, so "1 child" is the profile's adults plus one child, not one adult.
+ */
+export function parsePlanForm(fd: FormData, currency: string, travellers: { adults: number; children: number } = { adults: 1, children: 0 }): FormResult<StartInput> {
   const sentence = text(fd, "text").slice(0, 1000);
   const request: Partial<PlanRequest> = {};
 
@@ -44,7 +48,7 @@ export function parsePlanForm(fd: FormData, currency: string): FormResult<StartI
   const adults = int(fd, "adults");
   const children = int(fd, "children");
   if (adults === null || children === null || (adults !== undefined && adults < 1) || (children !== undefined && children < 0)) return { ok: false, error: "Travellers must be whole numbers; at least one adult." };
-  if (adults !== undefined || children !== undefined) request.travellers = { adults: adults ?? 1, children: children ?? 0 };
+  if (adults !== undefined || children !== undefined) request.travellers = { adults: adults ?? travellers.adults, children: children ?? travellers.children };
 
   const budget = text(fd, "budget");
   if (budget) {

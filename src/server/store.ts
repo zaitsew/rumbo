@@ -306,6 +306,17 @@ export function createStore(db: Db, userId: string = OWNER) {
       ).run(userId, watch.id, JSON.stringify(watch));
       return watch;
     },
+    /**
+     * Stamp the run time on a watch and touch nothing else. A collection reads its watches, spends
+     * seconds in the sources, and must not write the stale copy back over an edit, a pause or a delete
+     * made meanwhile; a deleted watch stays deleted. Returns whether a row changed.
+     */
+    markWatchRun(id: string, at: string): boolean {
+      const res = db
+        .prepare("UPDATE watches SET json = json_set(json, '$.last_run_at', ?) WHERE user_id = ? AND id = ?")
+        .run(at, userId, id);
+      return Number(res.changes) > 0;
+    },
     deleteWatch(id: string): boolean {
       const res = db.prepare("DELETE FROM watches WHERE user_id = ? AND id = ?").run(userId, id);
       return Number(res.changes) > 0;
@@ -416,6 +427,14 @@ export function createStore(db: Db, userId: string = OWNER) {
          ON CONFLICT(user_id, id) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at`,
       ).run(userId, plan.id, JSON.stringify(plan), utc(now));
       return plan;
+    },
+    /** Save a plan only while the stored copy is not archived. Returns null when it is (or is gone). */
+    putPlanUnlessArchived(input: unknown, now: Date = new Date()): Plan | null {
+      const plan = PlanSchema.parse(input);
+      const res = db
+        .prepare("UPDATE plans SET json = ?, updated_at = ? WHERE user_id = ? AND id = ? AND json_extract(json, '$.status') != 'archived'")
+        .run(JSON.stringify(plan), utc(now), userId, plan.id);
+      return Number(res.changes) > 0 ? plan : null;
     },
     listPlans(): Plan[] {
       return parseAll(rows(db, "SELECT json FROM plans WHERE user_id = ? ORDER BY updated_at DESC, id", userId), (j) => PlanSchema.parse(j), "plan");

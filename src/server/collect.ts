@@ -1,6 +1,6 @@
-import type { Observation } from "../core/schema";
+import type { Observation, Watch } from "../core/schema";
 import { sawk } from "./sawk";
-import { ALL_SOURCES, queriesForWatch, runSources, type CallLedger, type CallRecord, type Env, type Source } from "./sources";
+import { ALL_SOURCES, OBSERVATION_KIND_OF, queriesForWatch, runSources, type CallLedger, type CallRecord, type Env, type Source } from "./sources";
 import { createCallLedger, createStore, db as processDb, recordRun, type Store } from "./store";
 
 /**
@@ -54,9 +54,15 @@ async function collect(userId: string, now: Date, deps: CollectDeps): Promise<Co
   const env = deps.env ?? process.env;
   const sources = deps.sources ?? [...ALL_SOURCES, sawk];
   const ledger = deps.ledger ?? createCallLedger(store.db);
+  // A watch no enabled source can serve is skipped before the batch is cut, so a pile of them cannot
+  // fill the 25 places and starve a runnable watch behind them.
+  const servable = (w: Watch): boolean => {
+    const queries = queriesForWatch(w, profile);
+    return queries.some((q) => sources.some((s) => s.kinds.includes(OBSERVATION_KIND_OF[q.kind]) && s.enabled(env)));
+  };
   const due = store
     .listWatches()
-    .filter((w) => w.active && isDue(w.every_hours, w.last_run_at, now))
+    .filter((w) => w.active && isDue(w.every_hours, w.last_run_at, now) && servable(w))
     .sort((a, b) => (a.last_run_at ?? "").localeCompare(b.last_run_at ?? "") || a.id.localeCompare(b.id))
     .slice(0, MAX_WATCHES_PER_COLLECT);
   if (!due.length) return result;
@@ -81,12 +87,12 @@ async function collect(userId: string, now: Date, deps: CollectDeps): Promise<Co
       const r = store.upsertObservations(stamped);
       result.observations += r.inserted + r.updated;
     }
-    // A watch that no source could answer (all off, all failing) is tried again at the next call.
-    const answered = calls.some((c) => c.ok);
-    if (answered) {
-      store.upsertWatch({ ...watch, last_run_at: now.toISOString() });
-      result.watches_run++;
-    }
+    // A watch is stamped once a source was really called, whether it answered or failed, so a watch
+    // that keeps failing waits its interval and the batch moves on. A watch the daily caps or a refused
+    // key kept from calling anything stays unstamped and goes first next time. The stamp is a targeted
+    // update: the watch may have been edited, paused or deleted while the sources ran.
+    if (calls.some((c) => c.n > 0)) store.markWatchRun(watch.id, now.toISOString());
+    if (calls.some((c) => c.ok)) result.watches_run++;
   }
 
   const finished = new Date().toISOString();

@@ -16,7 +16,8 @@ function message(err: unknown): string {
 
 export async function startPlanAction(_prev: FormState, formData: FormData): Promise<FormState> {
   await assertOwner();
-  const parsed = parsePlanForm(formData, store().getProfile()?.currency ?? "EUR");
+  const profile = store().getProfile();
+  const parsed = parsePlanForm(formData, profile?.currency ?? "EUR", profile?.travellers);
   if (!parsed.ok) return { ok: false, message: parsed.error };
   let id: string;
   try {

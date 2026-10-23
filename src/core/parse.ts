@@ -253,11 +253,11 @@ export function parsePlanText(text: string, today: string, profile: Profile, kno
     }
   }
   // December 5-9, Dec 28 to Jan 3
-  if (!window && (m = take(re(String.raw`${B}(${MON_ANY})\.?\s*(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|to|until|till|through|and|al|hasta|по|до)\s*(?:(${MON_ANY})\.?\s*)?(\d{1,2})(?:st|nd|rd|th)?(?!\d)${UNITS_AFTER}`)))) {
+  if (!window && (m = take(re(String.raw`${B}(${MON_ANY})\.?\s*(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|to|until|till|through|and|al|hasta|по|до)\s*(?:(${MON_ANY})\.?\s*)?(\d{1,2})(?:st|nd|rd|th)?(?!\d)${UNITS_AFTER}(?:\s*,?\s*(\d{4}))?`)))) {
     const m1 = monthOf(m[1]!);
     const m2 = m[3] ? monthOf(m[3]) : m1;
     if (m1 && m2) {
-      const a = nextDate(m1, +m[2]!, undefined, today);
+      const a = nextDate(m1, +m[2]!, fullYear(m[5]), today);
       if (a) {
         const ay = Number(a.slice(0, 4));
         let b = ymd(m2 < m1 ? ay + 1 : ay, m2, +m[4]!);

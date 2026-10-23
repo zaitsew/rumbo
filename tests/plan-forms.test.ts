@@ -39,6 +39,13 @@ describe("parsePlanForm", () => {
     expect(r).toEqual({ ok: true, value: { request: { nights: { min: 4, max: 4 } } } });
   });
 
+  it("merges partial traveller input with the profile defaults per field", () => {
+    const profile = { adults: 2, children: 0 };
+    expect(parsePlanForm(fd({ children: "1" }), "EUR", profile)).toEqual({ ok: true, value: { request: { travellers: { adults: 2, children: 1 } } } });
+    expect(parsePlanForm(fd({ adults: "3" }), "EUR", { adults: 2, children: 1 })).toEqual({ ok: true, value: { request: { travellers: { adults: 3, children: 1 } } } });
+    expect(parsePlanForm(fd({ text: "x" }), "EUR", profile)).toEqual({ ok: true, value: { text: "x" } });
+  });
+
   it("explains each mistake", () => {
     const bad = (e: Record<string, string>) => {
       const r = parsePlanForm(fd(e), "EUR");

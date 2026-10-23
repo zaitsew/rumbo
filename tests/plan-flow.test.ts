@@ -222,6 +222,45 @@ describe("choosePlace: from a place to a plan", () => {
     expect(plan.dates).toEqual({ from: "2026-12-01", to: "2026-12-04" });
   });
 
+  it("ignores cached fares from airports the trip does not use", async () => {
+    const started = await startPlan("owner", { text: TEXT }, deps({ sources: [] }));
+    store.upsertObservations([
+      flightObs("mad", { origin: "MAD", depart_date: "2026-12-10", return_date: "2026-12-13", price: { amount_minor: 100, currency: "EUR" } }),
+      flightObs("vlc", { origin: "VLC", depart_date: "2026-12-20", return_date: "2026-12-23", price: { amount_minor: 9000, currency: "EUR" } }),
+    ]);
+    const plan = await choosePlace("owner", started.id, "Lisbon", undefined, deps({ sources: [] }));
+    expect(plan.dates).toEqual({ from: "2026-12-20", to: "2026-12-23" }); // the VLC fare, not the cheaper MAD one
+  });
+
+  it("keeps the fallback dates inside the window, and says when the window is too short", async () => {
+    const started = await startPlan("owner", { text: "5 nights in December", request: { window: { from: "2026-12-01", to: "2026-12-03" }, nights: { min: 5, max: 5 } } }, deps({ sources: [] }));
+    const plan = await choosePlace("owner", started.id, "Lisbon", undefined, deps({ sources: [] }));
+    expect(plan.dates).toEqual({ from: "2026-12-01", to: "2026-12-03" });
+    // A named place is planned straight away, so the one-day window fails in startPlan.
+    await expect(startPlan("owner", { text: "Lisbon", request: { window: { from: "2026-12-01", to: "2026-12-01" } } }, deps({ sources: [] }))).rejects.toThrow(/too short/);
+  });
+
+  it("rejects dates it picked itself when they are in the past, like dates the owner typed", async () => {
+    const started = await startPlan("owner", { text: TEXT }, deps({ sources: [] }));
+    const old = deps({ sources: [], now: new Date("2027-03-01T08:00:00Z") }); // the saved plan's window is now over
+    await expect(choosePlace("owner", started.id, "Lisbon", undefined, old)).rejects.toThrow(/past|too short/);
+    expect(store.getPlan(started.id)!.status).toBe("choosing");
+  });
+
+  it("does not bring back a plan archived in another tab while its search ran", async () => {
+    const started = await startPlan("owner", { text: TEXT }, deps({ sources: [] }));
+    const archiver = fakeSource({
+      name: "archiver",
+      kinds: ["stay"],
+      search: () => {
+        archivePlan("owner", started.id, { store, now: NOW });
+        return [];
+      },
+    });
+    await expect(choosePlace("owner", started.id, "Lisbon", undefined, deps({ sources: [archiver] }))).rejects.toThrow(/archived/);
+    expect(store.getPlan(started.id)!.status).toBe("archived");
+  });
+
   it("shows a failing or missing source and still produces the plan, with links", async () => {
     const started = await startPlan("owner", { text: TEXT }, deps());
     const broken = fakeSource({ name: "stays-broken", kinds: ["stay"], search: () => { throw new Error("HTTP 503"); } });
@@ -309,6 +348,10 @@ describe("plans", () => {
     expect(store.usage(NOW).last_collect_at).toBe("never");
   });
 });
+
+function flightObs(id: string, over: Record<string, unknown>) {
+  return { kind: "flight", id, title: "x", place: "Lisbon", tags: [], provenance: { source: "s", seen_at: NOW.toISOString(), expires_at: new Date(NOW.getTime() + 6 * 3_600_000).toISOString() }, origin: "VLC", destination: "LIS", depart_date: "2026-12-01", return_date: "2026-12-04", price: { amount_minor: 9000, currency: "EUR" }, stops: 0, legs: [], ...over } as never;
+}
 
 describe("cheapestFares", () => {
   const f = (o: Record<string, unknown>) => ({ kind: "flight", id: String(o.id), title: "x", place: "Lisbon", tags: [], provenance: { source: "s", seen_at: NOW.toISOString() }, origin: "VLC", destination: "LIS", depart_date: "2026-12-01", return_date: "2026-12-04", price: { amount_minor: 9000, currency: "EUR" }, stops: 0, legs: [], ...o }) as never;
