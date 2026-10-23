@@ -48,3 +48,22 @@ export function feedItemView(i: FeedItem) {
     state: i.state,
   };
 }
+
+/** A compact view of one stored observation, for plan sections: the facts, the price and where it came from. */
+export function observationView(o: Observation, now: Date) {
+  const price = headlinePrice(o);
+  const expires = o.provenance.expires_at;
+  return {
+    id: o.id,
+    kind: o.kind,
+    title: o.title,
+    place: o.place,
+    price: price ? { text: formatMoney(price), amount_minor: price.amount_minor, currency: price.currency } : null,
+    dates: datesOf(o) ?? null,
+    url: o.book_url ?? o.provenance.url ?? null,
+    source: o.provenance.source,
+    seen_at: o.provenance.seen_at,
+    expires_at: expires ?? null,
+    stale: !!expires && Date.parse(expires) <= now.getTime(),
+  };
+}

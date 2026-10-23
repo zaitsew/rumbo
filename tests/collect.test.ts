@@ -63,6 +63,23 @@ describe("collectDue", () => {
     expect(store.usage(NOW).last_collect_at).not.toBe("never");
   });
 
+  it("does not let watches whose sources are at their daily cap hold the batch", async () => {
+    const day = NOW.toISOString().slice(0, 10);
+    // More flight watches than one batch holds, all older than the event watch, on a flight source with no room left.
+    for (let i = 0; i < MAX_WATCHES_PER_COLLECT + 5; i++) store.upsertWatch(watch(`f${String(i).padStart(2, "0")}`, { last_run_at: hoursAgo(100 + i) }));
+    store.upsertWatch({ ...watch("ev", { last_run_at: hoursAgo(30) }), kind: "place-events", label: "Lisbon events", origin: [], destination: [], place: "Lisbon", window: { from: "2026-12-01", to: "2026-12-31" } });
+    const flights = fakeFlights("capped-fares", { dailyCap: 3 });
+    const events = fakeEvents("open-events");
+    const ledger = memoryLedger();
+    ledger.add("capped-fares", day, 3);
+    const r = await collectDue("owner", NOW, { store, sources: [flights, events], env: {}, ledger });
+    expect(flights.queries).toHaveLength(0);
+    expect(events.queries).toHaveLength(1);
+    expect(r.watches_run).toBe(1);
+    expect(store.getWatch("ev")!.last_run_at).toBe(NOW.toISOString());
+    expect(store.listWatches().filter((w) => w.id.startsWith("f") && w.last_run_at === NOW.toISOString())).toHaveLength(0);
+  });
+
   it("respects each source's daily cap: the watch the cap blocks is not stamped and is tried again", async () => {
     store.upsertWatch(watch("w1", { label: "one" }));
     store.upsertWatch(watch("w2", { label: "two", destination: ["PRG"] }));

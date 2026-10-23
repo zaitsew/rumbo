@@ -6,7 +6,7 @@ Status: the prompt and the MCP calls are tested through the tool handlers. Creat
 
 ## Set up
 
-1. Connect Rumbo to Claude. In Claude Code run `scripts/install-claude.sh`. For the desktop app and claude.ai, open Settings > Connectors > Add custom connector and paste the `/mcp/<key>` URL from `/agents` (the key is in the URL, so keep it private). Check that `rumbo` shows its 10 tools.
+1. Connect Rumbo to Claude. In Claude Code run `scripts/install-claude.sh`. For the desktop app and claude.ai, open Settings > Connectors > Add custom connector and paste the `/mcp/<key>` URL from `/agents` (the key is in the URL, so keep it private). Check that `rumbo` shows its 13 tools.
 2. Connect the travel connectors you have (Booking.com, Expedia, Viator, Tripadvisor, Kiwi). The brief adapts to what you declare; with none, it hands back deep links and web search.
 3. In the app: Scheduled tasks > New task. Name `Rumbo daily`. Frequency daily, 07:30. Model Sonnet. Allow the `rumbo` tools and your travel connectors, and web search, without asking (nobody is there at 07:30).
 4. Paste the prompt below.
