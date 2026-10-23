@@ -280,12 +280,16 @@ function flightsQuery(origin: string[], destination: string[], window: { from: s
 
 const sameCurrencyFirst = (a: Money, currency: string): number => (a.currency === currency ? 0 : 1);
 
+type Busy = { from: string; to: string }[];
+/** True when a trip from `from` to `to` touches any of the owner's busy windows (both ends inclusive). */
+const clashes = (from: string, to: string, busy: Busy = []) => busy.some((b) => from <= b.to && to >= b.from);
+
 /**
  * Cheapest fare per candidate, from observations only; a trip must fit inside the request's window.
  * `origins` limits the fares to flights leaving from those airports, so a cheap fare from an airport the
- * owner did not ask for cannot rank a place.
+ * owner did not ask for cannot rank a place. A fare that clashes with the owner's busy dates does not count.
  */
-export function cheapestFares(candidates: Pick<DestinationCandidate, "place" | "airports">[], observations: Observation[], r: PlanRequest, currency: string, origins?: string[]): Map<string, Fare> {
+export function cheapestFares(candidates: Pick<DestinationCandidate, "place" | "airports">[], observations: Observation[], r: PlanRequest, currency: string, origins?: string[], busy?: Busy): Map<string, Fare> {
   const out = new Map<string, Fare>();
   for (const c of candidates) {
     let best: Observation | undefined;
@@ -296,6 +300,7 @@ export function cheapestFares(candidates: Pick<DestinationCandidate, "place" | "
       if (!here) continue;
       if (o.return_date && o.return_date > r.window.to) continue;
       if (o.depart_date < r.window.from) continue;
+      if (clashes(o.depart_date, o.return_date ?? o.depart_date, busy)) continue;
       if (!best || best.kind !== "flight") { best = o; continue; }
       const a = sameCurrencyFirst(o.price, currency), b = sameCurrencyFirst(best.price, currency);
       if (a < b || (a === b && o.price.currency === best.price.currency && o.price.amount_minor < best.price.amount_minor)) best = o;
@@ -350,7 +355,7 @@ export async function startPlan(userId: string, input: StartInput, deps: PlanDep
     const { observations, notices: n } = await runBudgeted(queries, ctx);
     notices = n;
     if (observations.length) ctx.store.upsertObservations(observations);
-    const fares = cheapestFares(ranked, observations, request, profile.currency, origins);
+    const fares = cheapestFares(ranked, observations, request, profile.currency, origins, profile.busy);
     if (fares.size) {
       // Re-score only these places, now that some have a fare; the rest of the pool has none to compare.
       const subset = ctx.destinations.filter((d) => ranked.some((c) => norm(c.place) === norm(d.place)));
@@ -385,9 +390,10 @@ export interface TripDates { from: string; to: string }
 /**
  * The dates the owner gave, else the cheapest fare found for the place from the requested origins, else
  * the window start plus the shortest stay, cut at the window's end. `origins` limits which cached fares
- * count (a MAD fare must not set the dates of a VLC trip); `today` keeps the pick out of the past.
+ * count (a MAD fare must not set the dates of a VLC trip); `today` keeps the pick out of the past; `busy`
+ * keeps it off the owner's busy dates.
  */
-export function pickDates(plan: Plan, candidate: DestinationCandidate, stored: Observation[], given?: TripDates, currency = "EUR", origins?: string[], today?: string): TripDates {
+export function pickDates(plan: Plan, candidate: DestinationCandidate, stored: Observation[], given?: TripDates, currency = "EUR", origins?: string[], today?: string, busy?: Busy): TripDates {
   if (given) return given;
   const { window, nights } = plan.request;
   const fares = stored.filter(
@@ -399,13 +405,23 @@ export function pickDates(plan: Plan, candidate: DestinationCandidate, stored: O
   );
   const fitting = fares.filter((o) => {
     const n = daysBetween(o.depart_date, o.return_date!);
-    return o.depart_date >= window.from && o.return_date! <= window.to && n >= nights.min && n <= nights.max && (!today || o.depart_date >= today);
+    return o.depart_date >= window.from && o.return_date! <= window.to && n >= nights.min && n <= nights.max && (!today || o.depart_date >= today) && !clashes(o.depart_date, o.return_date!, busy);
   });
   const best = fitting.sort((a, b) => sameCurrencyFirst(a.price, currency) - sameCurrencyFirst(b.price, currency) || a.price.amount_minor - b.price.amount_minor)[0];
   if (best) return { from: best.depart_date, to: best.return_date! };
-  const from = today && today > window.from && today <= window.to ? today : window.from;
-  const to = addDays(from, nights.min) > window.to ? window.to : addDays(from, nights.min);
+  // No fitting fare: the first free stretch of the shortest stay inside the window.
+  let from = today && today > window.from && today <= window.to ? today : window.from;
+  while (addDays(from, nights.min) <= window.to) {
+    const to = addDays(from, nights.min);
+    if (!clashes(from, to, busy)) return { from, to };
+    from = addDays(from, 1);
+  }
+  if (busy?.length && addDays(window.from, nights.min) <= window.to) {
+    throw new PlanError(`Every ${nights.min}-night stay between ${window.from} and ${window.to} clashes with your busy dates: widen the window or give the dates.`);
+  }
+  const to = window.to;
   if (to <= from) throw new PlanError(`The window ${window.from} to ${window.to} is too short for a stay: widen it or give the dates.`);
+  if (clashes(from, to, busy)) throw new PlanError(`The window ${window.from} to ${window.to} clashes with your busy dates: widen it or give the dates.`);
   return { from, to };
 }
 
@@ -442,7 +458,7 @@ async function planPlace(ctx: Ctx, plan: Plan, profile: Profile, candidate: Dest
   const r = plan.request;
   const stored = ctx.store.listObservations({ kinds: ["flight"], limit: 1000, now: ctx.now });
   const origins = r.origin?.length ? r.origin : profile.home_airports;
-  const dates = pickDates(plan, candidate, stored, given, profile.currency, origins, ctx.today);
+  const dates = pickDates(plan, candidate, stored, given, profile.currency, origins, ctx.today, profile.busy);
   // Dates the planner picked (from an old saved plan, say) pass the same checks as dates the owner typed.
   const badDates = validDates(dates, ctx.today);
   if (badDates) throw new PlanError(`${badDates} Change the window and choose the place again.`);
