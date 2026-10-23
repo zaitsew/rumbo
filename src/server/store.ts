@@ -425,7 +425,8 @@ export function createStore(db: Db, userId: string = OWNER) {
     usage(now: Date = new Date()): Record<string, string | number> {
       const week = utc(new Date(now.getTime() - 7 * 86_400_000));
       const n = (sql: string, ...p: SQLInputValue[]) => Number(one(db, sql, ...p)?.n ?? 0);
-      const last = one(db, "SELECT MAX(finished_at) AS at FROM runs WHERE ok = 1")?.at;
+      // Plan notices (id "plan:...") record what a source did for a plan; they are not collector runs.
+      const last = one(db, "SELECT MAX(finished_at) AS at FROM runs WHERE ok = 1 AND id NOT LIKE 'plan:%'")?.at;
       return {
         observations: n("SELECT COUNT(*) AS n FROM observations WHERE user_id = ?", userId),
         observations_7d: n("SELECT COUNT(*) AS n FROM observations WHERE user_id = ? AND first_seen_at >= ?", userId, week),

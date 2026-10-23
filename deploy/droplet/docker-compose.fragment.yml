@@ -50,6 +50,37 @@ services:
         max-size: 10m
         max-file: "3"
 
+  # Calls the collector once an hour: every watch that is due runs through the sources and its findings
+  # land in the feed. The owner key comes from the same env file as the web container and is never
+  # written into the repo. A failing call is logged and retried an hour later; the sources' daily caps
+  # bound the spend however often this runs.
+  # Named rumbo-scheduler because every product's services share one root compose project.
+  rumbo-scheduler:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    depends_on:
+      rumbo:
+        condition: service_healthy
+    env_file:
+      - /srv/{{name}}/.env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          curl -fsS --max-time 600 -X POST -H "Authorization: Bearer $$RUMBO_OWNER_KEY" http://rumbo:{{port}}/api/v1/collect || echo "collect failed at $$(date -u +%FT%TZ)"
+          echo
+          sleep 3600
+        done
+    mem_limit: 32m
+    cpus: 0.05
+    networks:
+      - apps
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: "2"
+
 networks:
   # Declared external: this fragment joins the network Caddy is on instead of making one.
   apps:
