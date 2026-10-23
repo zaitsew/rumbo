@@ -1,14 +1,16 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { authenticate, COOKIE_NAME, sessionCookieOptions, sessionValue, ownerKey } from "./auth";
 
-/** For server components and server actions (route handlers use `authorize` from ./auth). */
-
+/**
+ * For server components and server actions (route handlers use `authorize` from ./auth).
+ * Pages accept the session cookie only. A bearer key here would be a key-guessing oracle that
+ * skips the lockout in `authorize` (GET /signin redirects only for the right key).
+ */
 export async function isSignedIn(): Promise<boolean> {
-  const [c, h] = await Promise.all([cookies(), headers()]);
-  const cookie = c.get(COOKIE_NAME);
+  const cookie = (await cookies()).get(COOKIE_NAME);
   return authenticate({
     cookie: cookie ? `${COOKIE_NAME}=${cookie.value}` : null,
-    authorization: h.get("authorization"),
+    authorization: null,
   }).ok;
 }
 
