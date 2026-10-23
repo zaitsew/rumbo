@@ -1,0 +1,11 @@
+place: "Paris"
+country: "France"
+airports: [CDG, ORY]
+tags: [city, culture, museums, food, nightlife]
+best_months: [4, 5, 6, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 2
+  MAD: 2
+  BCN: 2
+cost_level: 4

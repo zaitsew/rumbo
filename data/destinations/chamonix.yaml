@@ -1,0 +1,13 @@
+place: "Chamonix"
+country: "France"
+airports: [GVA]
+region: "Alps"
+tags: [ski, mountains, hiking]
+best_months: [12, 1, 2, 3, 6, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5
+  MAD: 3.5
+  BCN: 3
+cost_level: 4
+notes: "Geneva (GVA) is about 1 h 15 min by road."

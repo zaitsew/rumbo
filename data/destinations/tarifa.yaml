@@ -1,0 +1,13 @@
+place: "Tarifa"
+country: "Spain"
+airports: [XRY, AGP]
+region: "Andalusia"
+tags: [kitesurf, surf, beach, nature]
+best_months: [5, 6, 7, 8, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5
+  MAD: 3
+  BCN: 3.5
+cost_level: 2
+notes: "No airport in Tarifa; Jerez (XRY) and Málaga (AGP) are about 1.5 to 2 h by road. Strong wind most of the year."

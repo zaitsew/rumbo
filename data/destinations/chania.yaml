@@ -1,0 +1,12 @@
+place: "Chania"
+country: "Greece"
+airports: [CHQ, HER]
+region: "Crete"
+tags: [beach, hiking, food, nature]
+best_months: [5, 6, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5.5
+  MAD: 5.5
+  BCN: 5
+cost_level: 2

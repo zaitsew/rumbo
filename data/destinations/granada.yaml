@@ -1,0 +1,12 @@
+place: "Granada"
+country: "Spain"
+airports: [GRX]
+tags: [culture, city, hiking, food]
+best_months: [3, 4, 5, 9, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 3
+  MAD: 1.5
+  BCN: 1.5
+cost_level: 2
+notes: "Sierra Nevada ski area is about 45 minutes by road."

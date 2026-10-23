@@ -1,0 +1,12 @@
+place: "Barcelona"
+country: "Spain"
+airports: [BCN]
+tags: [city, food, culture, nightlife, beach, museums]
+best_months: [4, 5, 6, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 3
+  MAD: 2.5
+  BCN: 0
+cost_level: 3
+notes: "Reachable by train from Valencia (about 3 h) and Madrid (about 2.5 h); the hours are the train."

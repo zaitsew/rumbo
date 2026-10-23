@@ -1,0 +1,11 @@
+place: "Milan"
+country: "Italy"
+airports: [MXP, LIN, BGY]
+tags: [city, food, culture, nightlife, museums]
+best_months: [4, 5, 6, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 2
+  MAD: 2.5
+  BCN: 1.5
+cost_level: 3

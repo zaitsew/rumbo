@@ -1,0 +1,11 @@
+place: "Kraków"
+country: "Poland"
+airports: [KRK]
+tags: [city, culture, museums, food]
+best_months: [4, 5, 6, 9, 12]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5
+  MAD: 5
+  BCN: 4.5
+cost_level: 1

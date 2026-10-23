@@ -1,0 +1,12 @@
+place: "Menorca"
+country: "Spain"
+airports: [MAH]
+region: "Balearic Islands"
+tags: [beach, nature, hiking]
+best_months: [6, 7, 8, 9]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 3
+  MAD: 1.5
+  BCN: 1
+cost_level: 3

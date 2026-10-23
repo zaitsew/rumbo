@@ -1,0 +1,13 @@
+place: "Fuerteventura"
+country: "Spain"
+airports: [FUE]
+region: "Canary Islands"
+tags: [kitesurf, surf, beach, nature]
+best_months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 5
+  MAD: 3
+  BCN: 3.5
+cost_level: 2
+notes: "Warm all year; the wind sports season is strongest in summer."

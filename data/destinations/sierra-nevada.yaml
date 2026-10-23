@@ -1,0 +1,13 @@
+place: "Sierra Nevada"
+country: "Spain"
+airports: [GRX, AGP]
+region: "Andalusia"
+tags: [ski, mountains, hiking]
+best_months: [12, 1, 2, 3]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 4
+  MAD: 2.5
+  BCN: 2.5
+cost_level: 2
+notes: "Ski resort near Granada (GRX, about 45 minutes by road)."

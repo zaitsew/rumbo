@@ -1,0 +1,11 @@
+place: "Zanzibar"
+country: "Tanzania"
+airports: [ZNZ]
+tags: [beach, dive, kitesurf]
+best_months: [1, 2, 6, 7, 8, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 12
+  MAD: 12.5
+  BCN: 12
+cost_level: 2

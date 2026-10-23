@@ -1,0 +1,11 @@
+place: "Cape Town"
+country: "South Africa"
+airports: [CPT]
+tags: [nature, wine, food, hiking, surf, kitesurf, city]
+best_months: [11, 12, 1, 2, 3]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 14.5
+  MAD: 15
+  BCN: 14.5
+cost_level: 2

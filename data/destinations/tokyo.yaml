@@ -1,0 +1,11 @@
+place: "Tokyo"
+country: "Japan"
+airports: [HND, NRT]
+tags: [food, city, culture, coffee, running]
+best_months: [3, 4, 5, 10, 11]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 17.5
+  MAD: 17.5
+  BCN: 17
+cost_level: 3

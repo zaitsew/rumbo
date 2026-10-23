@@ -1,0 +1,12 @@
+place: "Florence"
+country: "Italy"
+airports: [FLR, PSA]
+region: "Tuscany"
+tags: [culture, museums, food, wine, city]
+best_months: [4, 5, 9, 10]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 4
+  MAD: 2.5
+  BCN: 2
+cost_level: 3

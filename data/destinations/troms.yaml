@@ -1,0 +1,12 @@
+place: "Tromsø"
+country: "Norway"
+airports: [TOS]
+tags: [nature, ski, hiking]
+best_months: [1, 2, 3, 9, 10, 12]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 8.5
+  MAD: 8.5
+  BCN: 6.5
+cost_level: 4
+notes: "Northern lights season runs roughly from September to March."

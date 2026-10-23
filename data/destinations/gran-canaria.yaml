@@ -1,0 +1,12 @@
+place: "Gran Canaria"
+country: "Spain"
+airports: [LPA]
+region: "Canary Islands"
+tags: [beach, nature, hiking, kitesurf]
+best_months: [1, 2, 3, 4, 5, 10, 11, 12]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 3
+  MAD: 3
+  BCN: 3.5
+cost_level: 2

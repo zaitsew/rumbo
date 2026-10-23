@@ -1,0 +1,11 @@
+place: "New York"
+country: "United States"
+airports: [JFK, EWR, LGA]
+tags: [city, museums, culture, food, concerts, nightlife]
+best_months: [4, 5, 6, 9, 10, 11, 12]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 11.5
+  MAD: 8
+  BCN: 8.5
+cost_level: 4

@@ -1,0 +1,11 @@
+place: "Vienna"
+country: "Austria"
+airports: [VIE]
+tags: [culture, museums, city, coffee, food, concerts]
+best_months: [4, 5, 6, 9, 10, 12]
+# Approximate one-way hours with the usual connection (or the train where noted). A ranking aid, not a quote.
+flight_hours_from:
+  VLC: 4.5
+  MAD: 3
+  BCN: 2.5
+cost_level: 3
