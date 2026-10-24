@@ -232,8 +232,13 @@ describe("the Loco sync (D8)", () => {
     expect((await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([{ ...visit("x", "Rome", "2026-01-01", "2026-01-02"), source: "owner" }]) }))).status).toBe(400);
     expect((await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("x", "Rome", "2026-01-01", "2026-01-02"), { id: "bad" }]) }))).status).toBe(400);
     expect((await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("x", "Rome", "2026-01-01", "2026-01-02"), visit("x", "Rome", "2026-01-01", "2026-01-02")]) }))).status).toBe(400);
-    const ids = ((await (await mods.history!.GET!(req("/history"))).json()).history as { id: string }[]).map((t) => t.id);
-    expect(ids).toContain("loco-v-1");
+    // an id another source holds is refused, and that source's trip stays as it was
+    const taken = await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("own-1", "Rome", "2026-01-01", "2026-01-02")]) }));
+    expect(taken.status).toBe(409);
+    expect((await taken.json()).detail.ids).toEqual(["own-1"]);
+    const history = (await (await mods.history!.GET!(req("/history"))).json()).history as { id: string; title: string }[];
+    expect(history.map((t) => t.id)).toContain("loco-v-1");
+    expect(history.find((t) => t.id === "own-1")!.title).toBe("Porto");
   });
 
   it("replaces Loco's busy windows and keeps the owner's own", async () => {

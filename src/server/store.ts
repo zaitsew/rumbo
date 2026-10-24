@@ -419,13 +419,18 @@ export function createStore(db: Db, userId: string = OWNER) {
      * mirrors the owner's ended visits, so a visit Loco no longer has leaves Rumbo too. Rows of other
      * sources are untouched. Every trip must carry that `source`. One transaction.
      */
-    replaceHistorySource(source: string, input: unknown[]): { count: number; removed: number } {
+    replaceHistorySource(source: string, input: unknown[]): { count: number; removed: number } | { conflicts: string[] } {
       const trips = input.map((t) => PastTripSchema.parse(t));
       const stray = trips.find((t) => t.source !== source);
       if (stray) throw new Error(`trip ${stray.id} has source "${stray.source}", not "${source}"`);
       const ids = new Set(trips.map((t) => t.id));
       if (ids.size !== trips.length) throw new Error("two trips share an id");
       return inTransaction(db, () => {
+        // An id another source already holds is that source's trip: refused, never overwritten.
+        const foreign = rows(db, "SELECT id FROM history WHERE user_id = ? AND json_extract(json, '$.source') IS NOT ?", userId, source)
+          .map((r) => String(r.id))
+          .filter((id) => ids.has(id));
+        if (foreign.length) return { conflicts: foreign.sort() };
         const before = rows(db, "SELECT id FROM history WHERE user_id = ? AND json_extract(json, '$.source') = ?", userId, source);
         db.prepare("DELETE FROM history WHERE user_id = ? AND json_extract(json, '$.source') = ?").run(userId, source);
         const stmt = db.prepare("INSERT INTO history (user_id, id, json) VALUES (?, ?, ?) ON CONFLICT(user_id, id) DO UPDATE SET json = excluded.json");

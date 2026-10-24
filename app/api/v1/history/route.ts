@@ -39,6 +39,7 @@ export const PUT = route(async (req, { store }) => {
     return parsed.data;
   });
   if (new Set(trips.map((t) => t.id)).size !== trips.length) throw new ApiError(400, "invalid_body", "Two trips share an id.");
-  const { count, removed } = store.replaceHistorySource(source, trips);
-  return { accepted: count, removed };
+  const out = store.replaceHistorySource(source, trips);
+  if ("conflicts" in out) throw new ApiError(409, "id_taken", { message: "These ids belong to another source's trips.", ids: out.conflicts });
+  return { accepted: out.count, removed: out.removed };
 });

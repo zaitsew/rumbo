@@ -164,7 +164,7 @@ export function buildOpenApi(baseUrl: string): Json {
           description: "The body is the source's WHOLE history (up to 2000 trips, each with that `source`). Rows that source sent before are replaced; other sources are untouched. Loco's server uses it with ?source=loco.",
           parameters: [query("source", "The source whose rows are replaced, e.g. loco.", { type: "string" }, true)],
           requestBody: body({ type: "array", maxItems: 2000, items: ref("PastTrip") }),
-          responses: { "200": ok("{ accepted, removed }"), "413": { description: "Too many rows.", content: json(ref("Error")) }, ...ERRORS },
+          responses: { "200": ok("{ accepted, removed }"), "409": { description: "An id belongs to another source's trip; nothing changed.", content: json(ref("Error")) }, "413": { description: "Too many rows.", content: json(ref("Error")) }, ...ERRORS },
         },
       },
       "/api/v1/profile/busy": {
