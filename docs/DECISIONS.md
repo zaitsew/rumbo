@@ -61,3 +61,18 @@ owner lives and travels. Ivan chose the split on 2026-10-23: "Split: Rumbo trips
 owns plans and travel offers (flights, stays, car, activities). For a trip's city and dates it reads
 events from SAWk's API and shows them in the plan; it runs no events collector of its own. The
 `event` observation kind stays, for what SAWk returns.
+
+## D8 — Loco owns what it mirrors into Rumbo (2026-10-24)
+
+Ivan: "it can be a separate web product from Loco, but Loco will natively use it." Loco's server holds
+the owner's trips, so it is the source of truth for two things in Rumbo and replaces them whole:
+
+- **History with `source: "loco"`**: one row per city visit that has ended, sent as the full set with
+  `PUT /api/v1/history?source=loco`. A visit removed in Loco leaves Rumbo. This retired the one-off
+  import of 92 places on 2026-10-23. `POST /api/v1/history` stays an upsert for everyone else.
+- **Busy windows tagged " (Loco)"**: the owner's future days away from home, sent with
+  `PUT /api/v1/profile/busy?source=loco`. Windows without the tag are the owner's own and stay.
+
+These replaces are owner-key syncs of the owner's own data, not an agent deleting (D4 holds: no MCP
+tool deletes). A plan comes back the other way with `POST /api/v1/plans/{id}/loco`, which marks it
+`sent-to-loco`; Loco writes it as a proposal, and the owner decides there.

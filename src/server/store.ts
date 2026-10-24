@@ -414,6 +414,52 @@ export function createStore(db: Db, userId: string = OWNER) {
       });
       return { count: trips.length };
     },
+    /**
+     * The whole history of one source, replacing what that source sent before (D8): Loco's server
+     * mirrors the owner's ended visits, so a visit Loco no longer has leaves Rumbo too. Rows of other
+     * sources are untouched. Every trip must carry that `source`. One transaction.
+     */
+    replaceHistorySource(source: string, input: unknown[]): { count: number; removed: number } | { conflicts: string[] } {
+      const trips = input.map((t) => PastTripSchema.parse(t));
+      const stray = trips.find((t) => t.source !== source);
+      if (stray) throw new Error(`trip ${stray.id} has source "${stray.source}", not "${source}"`);
+      const ids = new Set(trips.map((t) => t.id));
+      if (ids.size !== trips.length) throw new Error("two trips share an id");
+      return inTransaction(db, () => {
+        // An id another source already holds is that source's trip: refused, never overwritten.
+        const foreign = rows(db, "SELECT id FROM history WHERE user_id = ? AND json_extract(json, '$.source') IS NOT ?", userId, source)
+          .map((r) => String(r.id))
+          .filter((id) => ids.has(id));
+        if (foreign.length) return { conflicts: foreign.sort() };
+        const before = rows(db, "SELECT id FROM history WHERE user_id = ? AND json_extract(json, '$.source') = ?", userId, source);
+        db.prepare("DELETE FROM history WHERE user_id = ? AND json_extract(json, '$.source') = ?").run(userId, source);
+        const stmt = db.prepare("INSERT INTO history (user_id, id, json) VALUES (?, ?, ?) ON CONFLICT(user_id, id) DO UPDATE SET json = excluded.json");
+        for (const t of trips) stmt.run(userId, t.id, JSON.stringify(t));
+        return { count: trips.length, removed: before.filter((r) => !ids.has(String(r.id))).length };
+      });
+    },
+    /**
+     * The busy windows one source owns, replacing its earlier ones (D8). A source's windows are the
+     * ones whose `what` ends with ` (<label>)`, e.g. "Lisbon (Loco)"; the label is appended when
+     * missing. The profile is read and written inside one transaction, so a profile update from an
+     * agent cannot land in between and be lost.
+     */
+    replaceBusySource(label: string, input: unknown[], now: Date = new Date()): { busy: Profile["busy"]; removed: number } {
+      const suffix = ` (${label})`;
+      const windows = ProfileSchema.shape.busy
+        .parse(input)
+        .map((w) => ({ ...w, what: w.what?.endsWith(suffix) ? w.what : `${w.what ?? label}${suffix}` }));
+      return inTransaction(db, () => {
+        const r = one(db, "SELECT json FROM profile WHERE user_id = ?", userId);
+        if (!r) throw new Error("there is no profile yet");
+        const profile = ProfileSchema.parse(JSON.parse(String(r.json)));
+        const kept = profile.busy.filter((b) => !b.what?.endsWith(suffix));
+        const busy = [...kept, ...windows].sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to));
+        const next = ProfileSchema.parse({ ...profile, busy });
+        db.prepare("UPDATE profile SET json = ?, updated_at = ? WHERE user_id = ?").run(JSON.stringify(next), utc(now), userId);
+        return { busy: next.busy, removed: profile.busy.length - kept.length };
+      });
+    },
 
     // plans
     getPlan(id: string): Plan | null {

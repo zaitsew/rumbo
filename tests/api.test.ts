@@ -31,6 +31,8 @@ beforeAll(async () => {
   mods.history = (await import("../app/api/v1/history/route")) as unknown as Mod;
   mods.plans = (await import("../app/api/v1/plans/route")) as unknown as Mod;
   mods.plan = (await import("../app/api/v1/plans/[id]/route")) as unknown as Mod;
+  mods.planLoco = (await import("../app/api/v1/plans/[id]/loco/route")) as unknown as Mod;
+  mods.busy = (await import("../app/api/v1/profile/busy/route")) as unknown as Mod;
   mods.health = (await import("../app/api/v1/health/route")) as unknown as Mod;
   closeDb = (await import("../src/server/store")).closeDb;
 });
@@ -208,5 +210,73 @@ describe("feedback, history, plans", () => {
     expect((await got.json()).plan.id).toBe("p1");
     const missing = await mods.plan!.GET!(req("/plans/zz"), { params: Promise.resolve({ id: "zz" }) });
     expect(missing.status).toBe(404);
+  });
+});
+
+describe("the Loco sync (D8)", () => {
+  const visit = (id: string, place: string, from: string, to: string) => ({ id, title: place, from, to, places: [place], source: "loco" });
+
+  it("replaces one source's whole history and leaves other sources alone", async () => {
+    await mods.history!.POST!(req("/history", { method: "POST", body: json([visit("loco-gran-canaria", "Gran Canaria", "2026-10-23", "2026-10-25"), { ...visit("own-1", "Porto", "2024-04-01", "2024-04-03"), source: "owner" }]) }));
+    const put = await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("loco-v-1", "Javea", "2026-10-09", "2026-10-10"), visit("loco-v-2", "Venice", "2026-09-14", "2026-09-15")]) }));
+    expect(await put.json()).toEqual({ accepted: 2, removed: 3 }); // loco-gran-canaria, and t1 and t2 above (source defaults to loco)
+    const ids = ((await (await mods.history!.GET!(req("/history"))).json()).history as { id: string }[]).map((t) => t.id).sort();
+    expect(ids).toEqual(expect.arrayContaining(["loco-v-1", "loco-v-2", "own-1"]));
+    expect(ids).not.toContain("loco-gran-canaria");
+    // a second identical PUT changes nothing
+    expect(await (await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("loco-v-1", "Javea", "2026-10-09", "2026-10-10"), visit("loco-v-2", "Venice", "2026-09-14", "2026-09-15")]) }))).json()).toEqual({ accepted: 2, removed: 0 });
+  });
+
+  it("refuses a history PUT without a source, with a foreign row, or with a bad row, and keeps the old rows", async () => {
+    expect((await mods.history!.PUT!(req("/history", { method: "PUT", body: json([]) }))).status).toBe(400);
+    expect((await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([{ ...visit("x", "Rome", "2026-01-01", "2026-01-02"), source: "owner" }]) }))).status).toBe(400);
+    expect((await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("x", "Rome", "2026-01-01", "2026-01-02"), { id: "bad" }]) }))).status).toBe(400);
+    expect((await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("x", "Rome", "2026-01-01", "2026-01-02"), visit("x", "Rome", "2026-01-01", "2026-01-02")]) }))).status).toBe(400);
+    // an id another source holds is refused, and that source's trip stays as it was
+    const taken = await mods.history!.PUT!(req("/history?source=loco", { method: "PUT", body: json([visit("own-1", "Rome", "2026-01-01", "2026-01-02")]) }));
+    expect(taken.status).toBe(409);
+    expect((await taken.json()).detail.ids).toEqual(["own-1"]);
+    const history = (await (await mods.history!.GET!(req("/history"))).json()).history as { id: string; title: string }[];
+    expect(history.map((t) => t.id)).toContain("loco-v-1");
+    expect(history.find((t) => t.id === "own-1")!.title).toBe("Porto");
+  });
+
+  it("replaces Loco's busy windows and keeps the owner's own", async () => {
+    await mods.profile!.PUT!(req("/profile", { method: "PUT", body: json({ ...PROFILE, busy: [{ from: "2026-12-24", to: "2026-12-26", what: "Christmas" }, { from: "2026-10-04", to: "2026-11-04", what: "October 2026 route (Loco)" }] }) }));
+    const res = await mods.busy!.PUT!(req("/profile/busy?source=loco", { method: "PUT", body: json([{ from: "2027-01-02", to: "2027-01-10", what: "Tokyo" }, { from: "2026-12-04", to: "2026-12-20", what: "Shanghai (Loco)" }]) }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).busy).toEqual([
+      { from: "2026-12-04", to: "2026-12-20", what: "Shanghai (Loco)" },
+      { from: "2026-12-24", to: "2026-12-26", what: "Christmas" },
+      { from: "2027-01-02", to: "2027-01-10", what: "Tokyo (Loco)" },
+    ]);
+    const cleared = await (await mods.busy!.PUT!(req("/profile/busy?source=loco", { method: "PUT", body: json([]) }))).json();
+    expect(cleared).toEqual({ busy: [{ from: "2026-12-24", to: "2026-12-26", what: "Christmas" }], removed: 2 });
+    expect((await mods.busy!.PUT!(req("/profile/busy?source=sawk", { method: "PUT", body: json([]) }))).status).toBe(400);
+    expect((await mods.busy!.PUT!(req("/profile/busy?source=loco", { method: "PUT", body: json([{ from: "soon", to: "later" }]) }))).status).toBe(400);
+  });
+
+  it("marks a ready plan sent to Loco and refuses one still choosing", async () => {
+    const { store } = await import("../src/server/store");
+    const s = store();
+    await mods.observations!.POST!(req("/observations", { method: "POST", body: json([flight("lf1")]) }));
+    const base = {
+      created_at: "2026-10-23T10:00:00Z",
+      request: { window: { from: "2026-12-01", to: "2026-12-31" }, nights: { min: 3, max: 4 } },
+      candidates: [], links: [],
+    };
+    s.putPlan({ ...base, id: "pr", status: "ready", chosen: "Lisbon", dates: { from: "2026-12-05", to: "2026-12-08" }, sections: { flights: ["lf1"] } });
+    s.putPlan({ ...base, id: "pc", status: "choosing", sections: {} });
+    const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
+    const sent = await mods.planLoco!.POST!(req("/plans/pr/loco?trip_slug=viva", { method: "POST" }), ctx("pr"));
+    expect(sent.status).toBe(200);
+    const body = await sent.json();
+    expect(body.status).toBe("sent-to-loco");
+    expect(body.loco_propose_args).toMatchObject({ slug: "viva", proposal: { id: "rumbo-plan-pr", createdBy: "rumbo" } });
+    expect(s.getPlan("pr")!.status).toBe("sent-to-loco");
+    // sending again answers the same arguments
+    expect((await mods.planLoco!.POST!(req("/plans/pr/loco", { method: "POST" }), ctx("pr"))).status).toBe(200);
+    expect((await mods.planLoco!.POST!(req("/plans/pc/loco", { method: "POST" }), ctx("pc"))).status).toBe(409);
+    expect((await mods.planLoco!.POST!(req("/plans/zz/loco", { method: "POST" }), ctx("zz"))).status).toBe(404);
   });
 });
