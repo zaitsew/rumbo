@@ -176,7 +176,9 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
         <p className="muted">
           {plan.dates ? `${formatDay(plan.dates.from)} to ${formatDay(plan.dates.to)}` : plan.request.text ?? ""}
           {plan.status === "archived" ? " · archived" : ""}
+          {plan.status === "sent-to-loco" ? " · sent to Loco" : ""}
         </p>
+        {plan.status === "ready" ? <p className="muted t-caption">In Loco, open a trip and tap Plan with Rumbo to add this plan as a proposal.</p> : null}
         {plan.request.text && plan.dates ? <p className="muted t-caption">“{plan.request.text}”</p> : null}
         {plan.chosen && !choosing && plan.status !== "archived" ? (
           <p className="t-caption">

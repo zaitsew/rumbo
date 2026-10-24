@@ -158,6 +158,24 @@ export function buildOpenApi(baseUrl: string): Json {
           requestBody: body({ type: "array", maxItems: 200, items: ref("PastTrip") }),
           responses: { "200": ok("{ accepted }"), ...ERRORS },
         },
+        put: {
+          operationId: "replaceHistorySource",
+          summary: "Replace one source's past trips",
+          description: "The body is the source's WHOLE history (up to 2000 trips, each with that `source`). Rows that source sent before are replaced; other sources are untouched. Loco's server uses it with ?source=loco.",
+          parameters: [query("source", "The source whose rows are replaced, e.g. loco.", { type: "string" }, true)],
+          requestBody: body({ type: "array", maxItems: 2000, items: ref("PastTrip") }),
+          responses: { "200": ok("{ accepted, removed }"), "413": { description: "Too many rows.", content: json(ref("Error")) }, ...ERRORS },
+        },
+      },
+      "/api/v1/profile/busy": {
+        put: {
+          operationId: "replaceBusySource",
+          summary: "Replace one source's busy windows",
+          description: "The body is the source's WHOLE list of busy days [{from, to, what?}]. Windows tagged with the source (\"… (Loco)\") are replaced; the owner's own stay. An empty array clears them.",
+          parameters: [query("source", "Only loco for now.", { type: "string", enum: ["loco"] }, true)],
+          requestBody: body({ type: "array", maxItems: 500, items: { type: "object", required: ["from", "to"], properties: { from: { type: "string", format: "date" }, to: { type: "string", format: "date" }, what: { type: "string" } } } }),
+          responses: { "200": ok("{ busy, removed }"), "409": { description: "No profile yet.", content: json(ref("Error")) }, ...ERRORS },
+        },
       },
       "/api/v1/plans": { get: { operationId: "listPlans", summary: "Saved trip plans", description: "Plans the owner started, newest first.", responses: { "200": ok("Plans."), ...ERRORS } } },
       "/api/v1/plans/{id}": {
@@ -180,6 +198,17 @@ export function buildOpenApi(baseUrl: string): Json {
             query("trip_id", "Id of the Loco trip.", { type: "string" }),
           ],
           responses: { "200": ok("{ loco_propose_args }"), "404": { description: "No such plan.", content: json(ref("Error")) }, ...ERRORS },
+        },
+        post: {
+          operationId: "sendPlanToLoco",
+          summary: "A plan as loco_propose arguments, marked sent to Loco",
+          description: "For the caller about to make the loco_propose call (Loco's server). Same answer as GET; a ready plan becomes sent-to-loco. 409 until a place is chosen. Nothing is booked.",
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string" }, description: "Plan id." },
+            query("trip_slug", "Slug of the Loco trip.", { type: "string" }),
+            query("trip_id", "Id of the Loco trip.", { type: "string" }),
+          ],
+          responses: { "200": ok("{ loco_propose_args, status }"), "404": { description: "No such plan.", content: json(ref("Error")) }, "409": { description: "No place chosen yet, or archived.", content: json(ref("Error")) }, ...ERRORS },
         },
       },
     },
