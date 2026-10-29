@@ -26,13 +26,27 @@ export interface ToolContext {
   rawArgs: Record<string, unknown>;
 }
 
+/**
+ * What a client may assume about a call. Every tool states all three, so a directory reviewer and an
+ * agent never read a default. `destructive` is true when a call can overwrite a stored value (the MCP
+ * meaning: not purely additive); nothing here deletes. `openWorld` is true when the tool itself calls
+ * outside services.
+ */
+export interface ToolHints {
+  readOnly: boolean;
+  destructive: boolean;
+  openWorld: boolean;
+  /** Repeating the same call changes nothing more. Defaults to `readOnly`. */
+  idempotent?: boolean;
+}
+
 export interface ToolDef<S extends z.ZodType = z.ZodType> {
   name: string;
-  title?: string;
+  title: string;
   description: string;
   inputSchema: S;
-  /** True when the tool changes nothing. Shown to clients as `readOnlyHint`. */
-  readOnly?: boolean;
+  /** Shown to clients as the tool's annotations. */
+  hints: ToolHints;
   /** Adjust the JSON Schema listed to clients (for fields validated row by row). */
   inputJsonSchema?: (generated: Record<string, unknown>) => Record<string, unknown>;
   handler: (args: z.output<S>, ctx: ToolContext) => unknown | Promise<unknown>;

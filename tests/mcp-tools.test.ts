@@ -534,3 +534,44 @@ describe("watches whose window is over", () => {
     expect(brief.expired_watches[0].note).toMatch(/expired/i);
   });
 });
+
+describe("the annotations of every tool", () => {
+  const EXPECTED: Record<string, { readOnly: boolean; destructive: boolean; openWorld: boolean }> = {
+    rumbo_feed: { readOnly: true, destructive: false, openWorld: false },
+    rumbo_feedback: { readOnly: false, destructive: false, openWorld: false },
+    rumbo_profile_get: { readOnly: true, destructive: false, openWorld: false },
+    rumbo_profile_update: { readOnly: false, destructive: true, openWorld: false },
+    rumbo_watch_list: { readOnly: true, destructive: false, openWorld: false },
+    rumbo_watch_add: { readOnly: false, destructive: true, openWorld: false },
+    rumbo_observe: { readOnly: false, destructive: true, openWorld: false },
+    rumbo_import_history: { readOnly: false, destructive: true, openWorld: false },
+    rumbo_agent_brief: { readOnly: true, destructive: false, openWorld: false },
+    rumbo_plan_start: { readOnly: false, destructive: false, openWorld: true },
+    rumbo_plan_get: { readOnly: true, destructive: false, openWorld: false },
+    rumbo_plan_choose: { readOnly: false, destructive: true, openWorld: true },
+    rumbo_to_loco: { readOnly: true, destructive: false, openWorld: false },
+  };
+
+  it("lists a title and the three hints, explicitly, on all 13 tools", () => {
+    const listed = listedTools();
+    expect(listed).toHaveLength(13);
+    expect(listed.map((t) => t.name).sort()).toEqual(Object.keys(EXPECTED).sort());
+    for (const t of listed) {
+      const want = EXPECTED[t.name]!;
+      expect(t.title, t.name).toMatch(/\S/);
+      expect(t.title, t.name).not.toBe(t.name);
+      expect(t.annotations, t.name).toMatchObject({
+        title: t.title,
+        readOnlyHint: want.readOnly,
+        destructiveHint: want.destructive,
+        openWorldHint: want.openWorld,
+      });
+    }
+  });
+
+  it("marks no read-only tool as destructive", () => {
+    for (const t of listedTools()) {
+      if (t.annotations.readOnlyHint) expect(t.annotations.destructiveHint, t.name).toBe(false);
+    }
+  });
+});

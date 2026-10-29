@@ -6,10 +6,10 @@ import { defineTool, ToolError } from "../tool";
 export const tool = defineTool({
   name: "rumbo_to_loco",
   title: "Plan as a Loco proposal",
+  hints: { readOnly: true, destructive: false, openWorld: false },
   description:
     "Turn a Rumbo plan into the arguments for Loco's loco_propose tool. Rumbo does not call Loco and nothing is booked: you call loco_propose yourself with `loco_propose_args`, " +
     "and the people on the trip decide. Pass trip_slug or trip_id of the Loco trip it belongs to.",
-  readOnly: true,
   inputSchema: z.object({
     plan_id: z.string().min(1),
     trip_slug: z.string().optional(),

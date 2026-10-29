@@ -9,6 +9,7 @@ const R = PlanRequestSchema.shape;
 export const tool = defineTool({
   name: "rumbo_plan_start",
   title: "Start a trip plan",
+  hints: { readOnly: false, destructive: false, openWorld: true },
   description:
     "Start a trip plan from the owner's own words or from fields. A sentence such as \"4 days of kitesurf in December, under 600 euros, with my wife\" works in English, Spanish or Russian: Rumbo reads it, " +
     "ranks places from its destination pool and fetches live fares for the best few; when the sentence names one place it plans that place at once. " +

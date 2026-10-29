@@ -6,6 +6,7 @@ import { defineTool, ToolError } from "../tool";
 export const tool = defineTool({
   name: "rumbo_feedback",
   title: "React to a feed item",
+  hints: { readOnly: false, destructive: false, openWorld: false },
   description:
     "Record the owner's reaction to a feed item: seen, saved, dismissed, booked, more-like-this or less-like-this. " +
     "Call it only when the owner said so; never guess a reaction. A dismissed or booked item leaves the feed.",
