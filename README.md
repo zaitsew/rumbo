@@ -65,6 +65,17 @@ The OpenAPI 3.1 document (for GPT actions and Grok) is public at `/openapi.json`
 
 ## Connect your AI agents
 
+**Claude Code plugin** (skill + MCP in one step; your own server and owner key):
+
+```
+/plugin marketplace add zaitsew/rumbo
+/plugin install rumbo@rumbo
+```
+
+Claude Code asks for the server URL and the owner key. The key is `sensitive`: it goes to the system keychain, not to a file, and is sent only as a bearer header to that URL.
+The plugin registers its own server (tools named `mcp__plugin_rumbo_rumbo__rumbo_*`). Use it or `scripts/install-claude.sh`, not both.
+
+
 Rumbo speaks MCP (Streamable HTTP, stateless) at `/mcp` with `Authorization: Bearer <key>`, and at `/mcp/<key>` for connectors that cannot set a header.
 Both go through the same lockout and rate limit. Tools: `rumbo_feed`, `rumbo_feedback`, `rumbo_profile_get`, `rumbo_profile_update`, `rumbo_watch_list`, `rumbo_watch_add`, `rumbo_observe`, `rumbo_import_history`, `rumbo_agent_brief`, `rumbo_plan_start`, `rumbo_plan_get`, `rumbo_plan_choose`, `rumbo_to_loco` (13 in all). None deletes, books or pays.
 
