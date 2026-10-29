@@ -1,6 +1,7 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { authorize, keyFromMcpPath } from "../auth";
 import { errorResponse, jsonResponse } from "../http";
+import { authenticateOAuth, challenge, oauthConfig } from "../oauth";
 import { apiLimiter } from "../ratelimit";
 import { store } from "../store";
 import { createMcpServer } from "./server";
@@ -47,8 +48,16 @@ export async function handleMcp(request: Request, opts: { pathKey?: string } = {
   const url = new URL(request.url);
   // A key in the path always counts as a credential; one that cannot be decoded counts as a wrong guess.
   const pathKey = opts.pathKey === undefined ? undefined : (keyFromMcpPath(opts.pathKey) ?? "invalid");
-  const auth = authorize(pathKey === undefined ? request : withBearer(request, pathKey));
-  if (!auth.ok) return auth.response;
+  // Bearer form only: a JWT access token from the authorization server (OAuth), checked before the owner key.
+  // The owner key still works as before; a path key never goes through OAuth.
+  const oauth = pathKey === undefined ? await authenticateOAuth(request) : null;
+  if (oauth && !oauth.ok) return oauth.response;
+  const auth = oauth ?? authorize(pathKey === undefined ? request : withBearer(request, pathKey));
+  if (!auth.ok) {
+    const cfg = pathKey === undefined && auth.response.status === 401 ? oauthConfig() : null;
+    if (cfg) auth.response.headers.set("WWW-Authenticate", challenge(cfg)); // tells an OAuth client where to sign in
+    return auth.response;
+  }
   if (!apiLimiter().take(auth.principal)) {
     return errorResponse(429, "rate_limited", "Too many requests. Slow down.", { "Retry-After": "60" });
   }

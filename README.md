@@ -77,7 +77,7 @@ The plugin registers its own server (tools named `mcp__plugin_rumbo_rumbo__rumbo
 
 
 Rumbo speaks MCP (Streamable HTTP, stateless) at `/mcp` with `Authorization: Bearer <key>`, and at `/mcp/<key>` for connectors that cannot set a header.
-Both go through the same lockout and rate limit. Tools: `rumbo_feed`, `rumbo_feedback`, `rumbo_profile_get`, `rumbo_profile_update`, `rumbo_watch_list`, `rumbo_watch_add`, `rumbo_observe`, `rumbo_import_history`, `rumbo_agent_brief`, `rumbo_plan_start`, `rumbo_plan_get`, `rumbo_plan_choose`, `rumbo_to_loco` (13 in all). None deletes, books or pays.
+Both go through the same lockout and rate limit. A client that can sign in at an authorization server may send an OAuth access token instead; see `docs/MCP-OAUTH.md` (off until `RUMBO_OAUTH_ISSUER` and `RUMBO_OAUTH_OWNER_SUB` are set). Tools: `rumbo_feed`, `rumbo_feedback`, `rumbo_profile_get`, `rumbo_profile_update`, `rumbo_watch_list`, `rumbo_watch_add`, `rumbo_observe`, `rumbo_import_history`, `rumbo_agent_brief`, `rumbo_plan_start`, `rumbo_plan_get`, `rumbo_plan_choose`, `rumbo_to_loco` (13 in all). None deletes, books or pays.
 
 ```
 scripts/install-claude.sh --dry-run && scripts/install-claude.sh   # Claude Code: key in Keychain, MCP server, skill

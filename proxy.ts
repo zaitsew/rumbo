@@ -3,7 +3,8 @@ import { authenticate } from "./src/server/auth";
 
 /**
  * Pages need the owner's session; everything else is checked where it is served:
- * /api and /mcp check the key themselves, /signin is how you get one, and /llms.txt,
+ * /api and /mcp check the key themselves, /signin is how you get one, /.well-known/ holds public
+ * OAuth metadata, and /llms.txt,
  * /openapi.json and static assets are public descriptions of the machine surface.
  */
 export function proxy(request: NextRequest) {
@@ -26,5 +27,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api(?:/|$)|mcp(?:/|$)|signin(?:/|$)|_next/|llms\\.txt$|llms-full\\.txt$|openapi\\.json$|icon\\.svg$|favicon\\.ico$|robots\\.txt$).*)"],
+  matcher: ["/((?!api(?:/|$)|mcp(?:/|$)|signin(?:/|$)|\\.well-known/|_next/|llms\\.txt$|llms-full\\.txt$|openapi\\.json$|icon\\.svg$|favicon\\.ico$|robots\\.txt$).*)"],
 };
