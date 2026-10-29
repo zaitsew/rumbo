@@ -1,6 +1,6 @@
 import { createHmac, generateKeyPairSync, sign, type KeyObject } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { createJwtVerifier, looksLikeJwt, oauthConfig, protectedResourceMetadata, type OAuthConfig } from "../src/server/oauth";
+import { authenticateOAuth, createJwtVerifier, looksLikeJwt, oauthConfig, protectedResourceMetadata, type OAuthConfig } from "../src/server/oauth";
 import { tempDir } from "./helpers";
 
 const ISSUER = "https://auth.example.com/v1";
@@ -32,7 +32,7 @@ function jwt(payload: Record<string, unknown>, opts: { alg?: string; kid?: strin
 function fetchStub(jwks: unknown = JWKS) {
   return vi.fn(async (url: string | URL | Request) => {
     const u = String(url);
-    if (u === `${ISSUER}/.well-known/oauth-authorization-server`) return Response.json({ issuer: ISSUER, jwks_uri: `${ISSUER}/jwks` });
+    if (u === "https://auth.example.com/.well-known/oauth-authorization-server/v1") return Response.json({ issuer: ISSUER, jwks_uri: `${ISSUER}/jwks` });
     if (u === `${ISSUER}/jwks`) return Response.json(jwks);
     return new Response("nope", { status: 404 });
   });
@@ -48,10 +48,14 @@ describe("oauthConfig", () => {
   });
 
   it("derives the resource, the audiences and the metadata URL", () => {
-    const cfg = oauthConfig({ ...ENV, RUMBO_OAUTH_ISSUER: `${ISSUER}/`, RUMBO_PUBLIC_URL: `${SITE}/` })!;
+    const cfg = oauthConfig({ ...ENV, RUMBO_PUBLIC_URL: `${SITE}/` })!;
     expect(cfg).toMatchObject({ issuer: ISSUER, resource: `${SITE}/mcp`, audiences: [`${SITE}/mcp`, SITE], ownerSub: "owner-sub", metadataUrl: `${SITE}/.well-known/oauth-protected-resource/mcp` });
     expect(oauthConfig({ ...ENV, RUMBO_OAUTH_AUDIENCE: "a, b" })!.audiences).toEqual(["a", "b"]);
     expect(protectedResourceMetadata(cfg)).toEqual({ resource: `${SITE}/mcp`, authorization_servers: [ISSUER], bearer_methods_supported: ["header"], resource_name: "Rumbo" });
+  });
+
+  it("keeps the issuer exactly as written, trailing slash included", () => {
+    expect(oauthConfig({ ...ENV, RUMBO_OAUTH_ISSUER: `${ISSUER}/` })!.issuer).toBe(`${ISSUER}/`);
   });
 
   it("tells a JWT from an owner key", () => {
@@ -123,11 +127,56 @@ describe("the JWT verifier", () => {
     expect(await v.verify(jwt(claims({ exp: clock / 1000 + 600 }), { kid: "rsa-2", key: fresh.privateKey }))).toEqual({ ok: true, subject: "owner-sub" });
   });
 
+  it("accepts an issuer whose iss ends in a slash", async () => {
+    const slash = oauthConfig({ ...ENV, RUMBO_OAUTH_ISSUER: `${ISSUER}/` }) as OAuthConfig;
+    const v = createJwtVerifier(slash, { fetch: fetchMock as unknown as typeof fetch, now: () => clock });
+    expect(await v.verify(jwt(claims({ iss: `${ISSUER}/` })))).toEqual({ ok: true, subject: "owner-sub" });
+    expect(await v.verify(jwt(claims({ iss: ISSUER })))).toEqual({ ok: false, reason: "wrong_issuer" });
+  });
+
+  it("finds the JWKS through the RFC 8414 path-inserted document", async () => {
+    fetchMock.mockImplementation((async (url: string | URL | Request) => {
+      const u = String(url);
+      if (u === "https://auth.example.com/.well-known/oauth-authorization-server/v1") return Response.json({ jwks_uri: "https://auth.example.com/keys" });
+      if (u === "https://auth.example.com/keys") return Response.json(JWKS);
+      return new Response("nope", { status: 404 });
+    }) as never);
+    expect(await make().verify(jwt(claims()))).toEqual({ ok: true, subject: "owner-sub" });
+  });
+
+  it("does not hit a failing issuer more than once a minute", async () => {
+    fetchMock.mockImplementation((async () => new Response("down", { status: 503 })) as never);
+    const v = make();
+    expect(await v.verify(jwt(claims()))).toEqual({ ok: false, reason: "unknown_key" });
+    const calls = fetchMock.mock.calls.length;
+    for (let i = 0; i < 5; i++) expect(await v.verify(jwt(claims()))).toEqual({ ok: false, reason: "unknown_key" });
+    expect(fetchMock.mock.calls.length).toBe(calls);
+    clock += 61_000;
+    await v.verify(jwt(claims({ exp: clock / 1000 + 600 })));
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(calls);
+  });
+
   it("refuses when the issuer cannot be reached", async () => {
     fetchMock.mockImplementation((async () => {
       throw new Error("down");
     }) as never);
     expect(await make().verify(jwt(claims()))).toEqual({ ok: false, reason: "unknown_key" });
+  });
+});
+
+describe("authenticateOAuth", () => {
+  it("leaves an owner key that looks like a JWT to the owner-key path", async () => {
+    const before = process.env.RUMBO_OWNER_KEY;
+    process.env.RUMBO_OWNER_KEY = "aaa.bbb.ccc";
+    try {
+      const cfg = oauthConfig(ENV);
+      const req = (t: string) => new Request("http://localhost/mcp", { method: "POST", headers: { authorization: `Bearer ${t}` } });
+      expect(await authenticateOAuth(req("aaa.bbb.ccc"), cfg)).toBeNull();
+      expect(await authenticateOAuth(req("aaa.bbb.zzz"), cfg, { verify: async () => ({ ok: false, reason: "x" }) })).toMatchObject({ ok: false });
+    } finally {
+      if (before === undefined) delete process.env.RUMBO_OWNER_KEY;
+      else process.env.RUMBO_OWNER_KEY = before;
+    }
   });
 });
 

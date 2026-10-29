@@ -16,7 +16,7 @@ The shared authorization server is the accounts hub (`Fabrique-Futur/accounts`, 
 | `POST /mcp` with no or a wrong credential | 401 with `WWW-Authenticate: Bearer realm="rumbo", resource_metadata="<site>/.well-known/oauth-protected-resource/mcp"`, so a client finds the authorization server. |
 | `POST /mcp` with a JWT access token | Signature against the issuer's JWKS (RS256 or ES256 only), then `iss`, `aud`, `exp`, `nbf` and `sub`. Refusal: 401 `invalid_token` with the reason code. |
 
-A JWT-shaped bearer (three dot-separated segments) is never an owner key, so the two paths do not overlap. A bad token does not count toward the owner-key lockout: a JWT cannot be guessed, and a connector retrying an expired one must not lock out a shared address.
+A JWT-shaped bearer (three dot-separated segments) goes to OAuth, unless it equals the owner key, which stays on the owner-key path. A bad token does not count toward the owner-key lockout: a JWT cannot be guessed, and a connector retrying an expired one must not lock out a shared address.
 
 ## One owner
 
@@ -30,9 +30,9 @@ A valid signature is not enough. The token's `sub` must equal `RUMBO_OAUTH_OWNER
 | `RUMBO_OAUTH_OWNER_SUB` | The owner's `sub`. Required. |
 | `RUMBO_PUBLIC_URL` | Required: the resource URL is `<RUMBO_PUBLIC_URL>/mcp`. Never read from request headers. |
 | `RUMBO_OAUTH_AUDIENCE` | Optional, comma-separated `aud` values. Default: the resource URL and the site root. |
-| `RUMBO_OAUTH_JWKS_URL` | Optional. Default: `jwks_uri` from `<issuer>/.well-known/oauth-authorization-server`, else `openid-configuration`. |
+| `RUMBO_OAUTH_JWKS_URL` | Optional. Default: `jwks_uri` from the RFC 8414 document (`<origin>/.well-known/oauth-authorization-server<issuer path>`), else `<issuer>/.well-known/openid-configuration`. |
 
-Keys are cached for 10 minutes; an unknown `kid` forces one refetch, at most once a minute.
+Keys are cached for 10 minutes. Any fetch attempt, failed or not, starts a one-minute pause before the next, so junk tokens or an issuer outage cannot make Rumbo hammer the issuer. `iss` must match `RUMBO_OAUTH_ISSUER` exactly, trailing slash included.
 
 ## Find your `sub`
 

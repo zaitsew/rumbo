@@ -1,4 +1,5 @@
 import { createHash, createPublicKey, verify as cryptoVerify, type KeyObject, type webcrypto } from "node:crypto";
+import { isOwnerKey } from "./auth";
 import { errorResponse } from "./http";
 import { authLockout, clientIp } from "./ratelimit";
 
@@ -12,8 +13,8 @@ import { authLockout, clientIp } from "./ratelimit";
  * (`RUMBO_OAUTH_OWNER_SUB`). Without it OAuth stays off, because any other account at the same
  * authorization server would otherwise reach the owner's data.
  *
- * The owner key (D5) stays first and unchanged. A bearer value that is not JWT-shaped never reaches
- * this module; a JWT-shaped one is never an owner key (keys are hex or base64url without dots).
+ * The owner key (D5) is unchanged. A bearer value that is not JWT-shaped never reaches this module,
+ * and one that equals the owner key is handed back to the owner-key path even if it is JWT-shaped.
  *
  * The seam is `TokenVerifier`. `createJwtVerifier` is the default: signature against the issuer's
  * JWKS, then iss, aud, exp, nbf, sub. Opaque tokens (RFC 7662 introspection) would be another
@@ -54,7 +55,8 @@ function httpsOrLocal(url: string): boolean {
 
 /** OAuth is on only when the issuer, the owner's `sub` and a fixed public URL are all set. */
 export function oauthConfig(env: Env = process.env): OAuthConfig | null {
-  const issuer = env.RUMBO_OAUTH_ISSUER?.trim().replace(/\/+$/, "");
+  // Kept exactly as written: `iss` is compared as a string, so "https://a/" and "https://a" are different issuers.
+  const issuer = env.RUMBO_OAUTH_ISSUER?.trim();
   const ownerSub = env.RUMBO_OAUTH_OWNER_SUB?.trim();
   const site = env.RUMBO_PUBLIC_URL?.trim().replace(/\/+$/, "");
   if (!issuer || !ownerSub || !site || !httpsOrLocal(issuer) || !/^https?:\/\/[^\s/]+$/i.test(site)) return null;
@@ -119,12 +121,25 @@ export function createJwtVerifier(cfg: OAuthConfig, deps: { fetch?: typeof fetch
   const clock = deps.now ?? Date.now;
   let jwksUrl: string | null = cfg.jwksUrl ?? null;
   let cache: JwksCache | null = null;
+  let lastAttempt: number | null = null;
   const parsed = new Map<string, KeyObject>();
 
+  /** RFC 8414 puts the well-known segment between host and path; OpenID Connect appends it. Try both, then the plain append. */
+  function discoveryUrls(): string[] {
+    const u = new URL(cfg.issuer);
+    const path = u.pathname.replace(/\/+$/, "");
+    const base = cfg.issuer.replace(/\/+$/, "");
+    return [
+      `${u.origin}/.well-known/oauth-authorization-server${path}`,
+      `${base}/.well-known/openid-configuration`,
+      `${base}/.well-known/oauth-authorization-server`,
+    ];
+  }
+
   async function discover(): Promise<string | null> {
-    for (const path of ["/.well-known/oauth-authorization-server", "/.well-known/openid-configuration"]) {
+    for (const url of discoveryUrls()) {
       try {
-        const res = await doFetch(cfg.issuer + path);
+        const res = await doFetch(url);
         if (!res.ok) continue;
         const doc = (await res.json()) as { jwks_uri?: unknown };
         if (typeof doc.jwks_uri === "string" && httpsOrLocal(doc.jwks_uri)) return doc.jwks_uri;
@@ -138,8 +153,9 @@ export function createJwtVerifier(cfg: OAuthConfig, deps: { fetch?: typeof fetch
   async function loadKeys(force: boolean): Promise<Jwk[]> {
     const now = clock();
     if (cache && !force && now - cache.fetchedAt < JWKS_TTL_MS) return cache.keys;
-    // A forced refresh (unknown kid) is rate limited, so a stream of junk tokens cannot make Rumbo hammer the issuer.
-    if (cache && force && now - cache.fetchedAt < JWKS_REFETCH_MIN_MS) return cache.keys;
+    // Every attempt, failed ones too, counts: a stream of junk tokens, or an issuer outage, cannot make Rumbo hammer the issuer.
+    if (lastAttempt !== null && now - lastAttempt < JWKS_REFETCH_MIN_MS) return cache?.keys ?? [];
+    lastAttempt = now;
     jwksUrl ??= await discover();
     if (!jwksUrl) return cache?.keys ?? [];
     try {
@@ -178,6 +194,7 @@ export function createJwtVerifier(cfg: OAuthConfig, deps: { fetch?: typeof fetch
   return {
     reset() {
       cache = null;
+      lastAttempt = null;
       parsed.clear();
       jwksUrl = cfg.jwksUrl ?? null;
     },
@@ -256,7 +273,7 @@ export async function authenticateOAuth(
 ): Promise<null | { ok: true; principal: string } | { ok: false; response: Response }> {
   if (!cfg) return null;
   const bearer = /^Bearer\s+(.+)$/i.exec(request.headers.get("authorization")?.trim() ?? "")?.[1]?.trim();
-  if (!bearer || !looksLikeJwt(bearer)) return null;
+  if (!bearer || !looksLikeJwt(bearer) || isOwnerKey(bearer)) return null; // an owner key that happens to look like a JWT is still the owner key
   if (authLockout().locked(clientIp(request.headers))) return null;
   const verdict = await (verifier ?? verifierFor(cfg)).verify(bearer);
   if (verdict.ok) return { ok: true, principal: `oauth:${createHash("sha256").update(verdict.subject).digest("hex").slice(0, 12)}` };
