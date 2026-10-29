@@ -1,0 +1,41 @@
+{
+  "name": "rumbo",
+  "displayName": "Rumbo",
+  "version": "0.1.0",
+  "description": "Plan trips from scratch and keep a personal ranked travel feed. The skill and the MCP connection to your own Rumbo server. Single-owner: you bring your server and your owner key.",
+  "author": {
+    "name": "Ivan Zaitsev",
+    "url": "https://github.com/zaitsew"
+  },
+  "homepage": "https://github.com/zaitsew/rumbo",
+  "repository": "https://github.com/zaitsew/rumbo",
+  "license": "Apache-2.0",
+  "keywords": ["travel", "trip-planning", "flights", "feed", "mcp"],
+  "skills": ["./skills/rumbo"],
+  "userConfig": {
+    "rumbo_url": {
+      "type": "string",
+      "title": "Rumbo server URL",
+      "description": "Where your Rumbo server runs, without a trailing /mcp. Example: https://rumbo.example.com",
+      "default": "https://rumbo.fabriquefutur.com",
+      "required": true
+    },
+    "rumbo_key": {
+      "type": "string",
+      "title": "Rumbo owner key",
+      "description": "The RUMBO_OWNER_KEY of your server. Kept in the system keychain, sent only as a bearer header to the URL above.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "mcpServers": {
+    "rumbo": {
+      "type": "http",
+      "url": "${user_config.rumbo_url}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${user_config.rumbo_key}",
+        "X-Rumbo-Agent": "claude-code"
+      }
+    }
+  }
+}

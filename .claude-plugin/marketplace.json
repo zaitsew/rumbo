@@ -1,0 +1,15 @@
+{
+  "name": "rumbo",
+  "owner": { "name": "Ivan Zaitsev", "url": "https://github.com/zaitsew" },
+  "metadata": { "description": "Rumbo: a personal trip planner and travel feed for your AI agent." },
+  "plugins": [
+    {
+      "name": "rumbo",
+      "source": "./",
+      "description": "Plan trips and read your ranked travel feed through your own Rumbo server. Needs your server URL and owner key.",
+      "version": "0.1.0",
+      "category": "travel",
+      "keywords": ["travel", "trip-planning", "flights", "feed", "mcp"]
+    }
+  ]
+}

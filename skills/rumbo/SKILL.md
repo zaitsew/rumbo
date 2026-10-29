@@ -5,7 +5,7 @@ description: Run the owner's Rumbo travel feed and plan trips with it. Use for "
 
 # Rumbo: travel feed and trip planning
 
-Rumbo keeps one traveller's profile, watches and ranked travel feed. You search with your own connectors, report what you saw, and read the ranked result back. The server ranks; you never compute a score or a price. Tools come from the `rumbo` MCP server (`rumbo_*`). In Claude Code they are named `mcp__rumbo__rumbo_feed` and so on; in other clients, the same names without the prefix.
+Rumbo keeps one traveller's profile, watches and ranked travel feed. You search with your own connectors, report what you saw, and read the ranked result back. The server ranks; you never compute a score or a price. Tools come from the `rumbo` MCP server (`rumbo_*`). In Claude Code they are named `mcp__rumbo__rumbo_feed` and so on; installed as the Claude plugin they are `mcp__plugin_rumbo_rumbo__rumbo_feed`; in other clients, the same names without the prefix.
 
 Two modes. A scheduled run or "rumbo run" is **Run**. A question about the feed or a trip is **Ask**.
 
