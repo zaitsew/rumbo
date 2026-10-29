@@ -18,7 +18,7 @@ export function observationItemSchema(): Record<string, unknown> {
 export const tool = defineTool({
   name: "rumbo_observe",
   title: "Report what you found",
-  hints: { readOnly: false, destructive: true, openWorld: false, idempotent: true },
+  hints: { readOnly: false, destructive: true, openWorld: false },
   description:
     "Post observations (flight, stay, car, activity, event, idea) you found. Rows are checked one by one; bad rows come back in `rejected` with the reason and the rest are stored. " +
     "Rules: report a price only if you saw it on a page or tool result, and put that page in provenance.url and the time in provenance.seen_at; never estimate; never scrape; `id` is optional (the server derives it). " +
