@@ -10,8 +10,13 @@
   "homepage": "https://github.com/zaitsew/rumbo",
   "repository": "https://github.com/zaitsew/rumbo",
   "license": "Apache-2.0",
-  "keywords": ["travel", "trip-planning", "flights", "feed", "mcp"],
-  "skills": ["./skills/rumbo"],
+  "keywords": [
+    "travel",
+    "trip-planning",
+    "flights",
+    "feed",
+    "mcp"
+  ],
   "userConfig": {
     "rumbo_url": {
       "type": "string",

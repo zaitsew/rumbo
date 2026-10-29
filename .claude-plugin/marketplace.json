@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "rumbo",
-      "source": "./",
+      "source": "./plugin",
       "description": "Plan trips and read your ranked travel feed through your own Rumbo server. Needs your server URL and owner key.",
       "version": "0.1.0",
       "category": "travel",

@@ -39,7 +39,7 @@ Not in yet: booking (by design, D4) and a rental-car source (car is links only).
 | `src/server/` | SQLite store (`node:sqlite`), owner auth, API helpers |
 | `scripts/` | `seed-profile`, `usage`, `validate-data`, `deploy.sh`, `install-claude.sh`, `install-codex.sh`, `run-agent.sh` |
 | `routines/agents/` | scheduled-run prompts and setup per harness (Claude, Codex, ChatGPT, Grok) |
-| `skills/rumbo/` | the skill Claude Code and Codex load for "rumbo run" and trip questions |
+| `plugin/` | the Claude Code plugin: manifest and the `rumbo` skill (`skills/rumbo` is a symlink to it) for Claude Code and Codex |
 | `deploy/droplet/` | Dockerfile, compose and Caddy fragments for the shared server |
 | `docs/` | brief, architecture, decisions, plan |
 
