@@ -76,3 +76,10 @@ the owner's trips, so it is the source of truth for two things in Rumbo and repl
 These replaces are owner-key syncs of the owner's own data, not an agent deleting (D4 holds: no MCP
 tool deletes). A plan comes back the other way with `POST /api/v1/plans/{id}/loco`, which marks it
 `sent-to-loco`; Loco writes it as a proposal, and the owner decides there.
+
+## D9 — OAuth on /mcp is a second way in, for the owner only (2026-10-29)
+
+ChatGPT custom connectors cannot send a static bearer token. `/mcp` also accepts a JWT access token from
+an authorization server (the accounts hub once its contract is merged), and publishes RFC 9728 metadata
+so a client finds it. The owner key stays: the scheduled runs depend on it. Rumbo has one owner, so the
+token's `sub` must equal `RUMBO_OAUTH_OWNER_SUB`; OAuth is off until that is set. Details: `docs/MCP-OAUTH.md`.
