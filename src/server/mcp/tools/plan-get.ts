@@ -5,10 +5,10 @@ import { defineTool, ToolError } from "../tool";
 export const tool = defineTool({
   name: "rumbo_plan_get",
   title: "Read a trip plan",
+  hints: { readOnly: true, destructive: false, openWorld: false },
   description:
     "Read one plan by id, or list the owner's plans when plan_id is left out. A plan has the request, the candidate places with the cheapest fare each source returned, " +
     "and once a place is chosen the flights, stay, activities and events, each with its price, source, link and time seen. It changes nothing. Report prices as given.",
-  readOnly: true,
   inputSchema: z.object({
     plan_id: z.string().min(1).max(60).optional().describe("A plan id from rumbo_plan_start. Leave out to list plans."),
     include_archived: z.boolean().optional().describe("When listing, also show archived plans."),

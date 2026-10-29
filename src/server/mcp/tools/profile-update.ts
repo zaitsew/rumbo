@@ -5,6 +5,7 @@ import { agentName, defineTool, ToolError } from "../tool";
 export const tool = defineTool({
   name: "rumbo_profile_update",
   title: "Add to the owner's profile",
+  hints: { readOnly: false, destructive: true, openWorld: false },
   description:
     "Add facts to the owner's profile. `set` is a partial profile: objects merge key by key, lists are unioned, scalars are replaced. " +
     "Nothing is ever removed; the owner removes things on the profile page. `note` is a free-text fact (\"prefers aisle seats\") saved in profile.notes with your name and the time. " +

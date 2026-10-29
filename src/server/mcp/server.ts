@@ -60,10 +60,16 @@ export function listedTools() {
     const inputSchema = t.inputJsonSchema ? t.inputJsonSchema(generated) : generated;
     return {
       name: t.name,
-      title: t.title ?? t.name,
+      title: t.title,
       description: t.description,
       inputSchema: { type: "object" as const, ...inputSchema },
-      annotations: { title: t.title ?? t.name, readOnlyHint: t.readOnly === true, destructiveHint: false, idempotentHint: t.readOnly === true, openWorldHint: false },
+      annotations: {
+        title: t.title,
+        readOnlyHint: t.hints.readOnly,
+        destructiveHint: t.hints.destructive,
+        idempotentHint: t.hints.idempotent ?? t.hints.readOnly,
+        openWorldHint: t.hints.openWorld,
+      },
     };
   });
 }

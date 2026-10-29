@@ -7,6 +7,7 @@ const MAX_TRIPS = 200;
 export const tool = defineTool({
   name: "rumbo_import_history",
   title: "Import past trips",
+  hints: { readOnly: false, destructive: true, openWorld: false, idempotent: true },
   description:
     "Save past trips so Rumbo knows where the owner has been and what they rated. For an agent that holds Loco's connector: call loco_list_trips and loco_get_trip, " +
     "map each trip to {id, title, from, to, places[], rating?, tags[]} and send them here. Trips are upserted by id; nothing is removed. " +

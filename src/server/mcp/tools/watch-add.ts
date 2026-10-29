@@ -8,6 +8,7 @@ const MAX_WATCHES = 100;
 export const tool = defineTool({
   name: "rumbo_watch_add",
   title: "Propose a watch",
+  hints: { readOnly: false, destructive: true, openWorld: false },
   description:
     "Add a search for Rumbo and scheduled agents to keep checking: a route, an anywhere scan, or events, stays or activities in a place. " +
     "It is marked as created by you, and the owner can switch it off or delete it. Add one only when the owner asked for it or it is plainly implied by what they told you; " +

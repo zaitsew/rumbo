@@ -8,6 +8,7 @@ const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 export const tool = defineTool({
   name: "rumbo_plan_choose",
   title: "Choose a place for a plan",
+  hints: { readOnly: false, destructive: true, openWorld: true },
   description:
     "Pick the place the owner chose for a plan and fill its flights, stay, activities and events from the sources, with links for the car. Call it only after the owner named the place; never choose for them. " +
     "The place is one of the plan's candidates or any city by name. Give from and to (YYYY-MM-DD) only if the owner gave dates; otherwise Rumbo uses the cheapest fare found, else the start of the window. " +
