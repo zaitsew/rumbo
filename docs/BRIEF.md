@@ -1,6 +1,6 @@
 # Brief — the owner's words
 
-Rumbo exists because of this request (Ivan Zaitsev, 2026-10-23), quoted verbatim:
+Rumbo exists because of this request (the owner, 2026-10-23), quoted verbatim:
 
 > Develop a tool that will help me to plan trips (destination, flight tickets, rent a car, hotels, activities, etc.) from scratch and will make a personal recommendations feed. I think it can be a separate web product from Loco, but Loco will natively use it. it should analyze aggregators (like google flights, google hotels, booking.com, airbnb) and providers (airlines direct websites, for example).
 >

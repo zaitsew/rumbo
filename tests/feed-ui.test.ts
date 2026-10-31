@@ -7,7 +7,7 @@ import { createStore, openDb, type Db, type Store } from "../src/server/store";
 import { PROFILE, flight } from "./helpers";
 
 const NOW = new Date("2026-10-23T12:00:00Z");
-const ON = { ACCOUNTS_SERVICE_RUMBO: "svc-token" };
+const ON = { ACCOUNTS_SERVICE_RUMBO: "svc-token", ACCOUNTS_URL: "https://hub.example.test" };
 
 function form(entries: Record<string, string>): FormData {
   const fd = new FormData();

@@ -181,7 +181,7 @@ describe("authenticateOAuth", () => {
 });
 
 describe("/mcp and the metadata route with OAuth on", () => {
-  const OWNER_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef";
+  const OWNER_KEY = "a".repeat(48); // obviously fake test key
   const HEADERS = { "content-type": "application/json", accept: "application/json, text/event-stream" };
   const body = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} });
   const tmp = tempDir();

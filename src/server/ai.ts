@@ -15,7 +15,6 @@ import { toMinor } from "./sources/http";
  * an answer that fails validation all return null and log one line. The site works without any of it.
  */
 
-const DEFAULT_ACCOUNTS_URL = "https://swgxlydagofazjtlqeiu.supabase.co";
 export const AI_MODEL = "claude-haiku-5-5";
 export const PARSE_TOOL = "set_trip_request";
 export const WHY_TOOL = "write_reason";
@@ -24,9 +23,10 @@ const VISITOR = "owner";
 
 type Env = Record<string, string | undefined>;
 
-/** On only when a hub service token is set and `RUMBO_AI` is not "off". */
+/** On only when a hub service token and the hub host (`ACCOUNTS_URL`, no default) are set and `RUMBO_AI` is not "off". */
 export function aiEnabled(env: Env = process.env): boolean {
   if (!env.ACCOUNTS_SERVICE_RUMBO?.trim()) return false;
+  if (!env.ACCOUNTS_URL?.trim()) return false;
   return env.RUMBO_AI?.trim().toLowerCase() !== "off";
 }
 
@@ -57,7 +57,7 @@ async function callTool(
   const env = opts.env ?? process.env;
   if (!aiEnabled(env)) return null;
   const token = env.ACCOUNTS_SERVICE_RUMBO!.trim();
-  const base = (env.ACCOUNTS_URL?.trim() || DEFAULT_ACCOUNTS_URL).replace(/\/+$/, "");
+  const base = env.ACCOUNTS_URL!.trim().replace(/\/+$/, "");
   const doFetch = opts.fetch ?? fetch;
   try {
     const res = await doFetch(`${base}/functions/v1/ai`, {

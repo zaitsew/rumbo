@@ -18,9 +18,9 @@ scraping too. Rumbo therefore reads only:
 - **Travelpayouts / Aviasales Data API** (free token): cached fares for cheap-month and anywhere scans.
 - **Viator Basic** and **Tiqets Partner API** (free affiliate tokens): activities.
 - **LiteAPI** (hotel rates, $0.01 a search) and **Duffel** (flight offers, fees per order and excess
-  searches) are paid. Their adapters exist but stay off until Ivan approves the price (POLICY §11).
+  searches) are paid. Their adapters exist but stay off until the owner approves the price (POLICY §11).
 - **Agents' own connectors.** Booking.com, Expedia, Viator and Tripadvisor ship official connectors in
-  Claude and ChatGPT. A scheduled agent uses them under Ivan's own account and posts what it saw with
+  Claude and ChatGPT. A scheduled agent uses them under the owner's own account and posts what it saw with
   `rumbo_observe`. Rumbo never drives a browser against an aggregator.
 - **Deep links** for everything else: Google Flights, Google Hotels, Booking.com, Airbnb, Skyscanner,
   Kayak, Discover Cars and the airlines' own booking pages, pre-filled with dates and travellers.
@@ -51,20 +51,20 @@ env var. Replace with the accounts hub's sign-in when a second person joins.
 
 ## D6 — The personal profile never enters the repo (2026-10-23)
 
-The repo is public. `profile.example.yaml` is generic. Ivan's profile lives in the database, seeded
+The repo is public. `profile.example.yaml` is generic. The owner's profile lives in the database, seeded
 once from a gitignored `profile.local.yaml`, and agents update it through `rumbo_profile_update`.
 
 ## D7 — Events belong to SAWk (2026-10-23)
 
 [SAWk](https://github.com/zaitsew/sawk) already keeps an agent-filled feed of offline events where the
-owner lives and travels. Ivan chose the split on 2026-10-23: "Split: Rumbo trips, SAWk events". Rumbo
+owner lives and travels. The owner chose the split on 2026-10-23: "Split: Rumbo trips, SAWk events". Rumbo
 owns plans and travel offers (flights, stays, car, activities). For a trip's city and dates it reads
 events from SAWk's API and shows them in the plan; it runs no events collector of its own. The
 `event` observation kind stays, for what SAWk returns.
 
 ## D8 — Loco owns what it mirrors into Rumbo (2026-10-24)
 
-Ivan: "it can be a separate web product from Loco, but Loco will natively use it." Loco's server holds
+The owner: "it can be a separate web product from Loco, but Loco will natively use it." Loco's server holds
 the owner's trips, so it is the source of truth for two things in Rumbo and replaces them whole:
 
 - **History with `source: "loco"`**: one row per city visit that has ended, sent as the full set with

@@ -151,7 +151,7 @@ describe("startPlan: from a sentence to ranked candidates with live fares", () =
 });
 
 describe("startPlan: the AI step", () => {
-  const ON = { ACCOUNTS_SERVICE_RUMBO: "svc" };
+  const ON = { ACCOUNTS_SERVICE_RUMBO: "svc", ACCOUNTS_URL: "https://hub.example.test" };
   const hub = (args: unknown) =>
     vi.fn(async (_u: unknown, init?: RequestInit) => {
       const name = JSON.parse(String(init?.body)).tool_choice.function.name;

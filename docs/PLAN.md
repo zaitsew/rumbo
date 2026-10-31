@@ -1,6 +1,6 @@
 # Plan — MVP (2026-10-23)
 
-Goal: Ivan opens rumbo.fabriquefutur.com, starts a trip from one sentence, and sees a feed that
+Goal: the owner opens rumbo.fabriquefutur.com, starts a trip from one sentence, and sees a feed that
 scheduled agents and the server's own collectors fill every day.
 
 ## Wave 1 (parallel, no shared files)

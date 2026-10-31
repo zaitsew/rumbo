@@ -3,7 +3,8 @@ import { AI_MODEL, aiEnabled, aiParsePlan, aiWhy, digitsAreGrounded, requestFrom
 import { ProfileSchema } from "../src/core/schema";
 
 const profile = ProfileSchema.parse({ home_city: "Valencia", home_airports: ["VLC"], currency: "EUR" });
-const ON = { ACCOUNTS_SERVICE_RUMBO: "svc-token" };
+const HUB = "https://hub.example.test";
+const ON = { ACCOUNTS_SERVICE_RUMBO: "svc-token", ACCOUNTS_URL: HUB };
 
 function toolFetch(args: unknown, status = 200) {
   const seen: { url: string; headers: Record<string, string>; body: any }[] = [];
@@ -23,6 +24,8 @@ describe("aiEnabled", () => {
     expect(aiEnabled({ ACCOUNTS_SERVICE_RUMBO: "  " })).toBe(false);
     expect(aiEnabled({ ...ON, RUMBO_AI: "off" })).toBe(false);
     expect(aiEnabled({ ...ON, RUMBO_AI: "OFF" })).toBe(false);
+    expect(aiEnabled({ ACCOUNTS_SERVICE_RUMBO: "svc-token" })).toBe(false); // no hub host, no default
+    expect(aiEnabled({ ACCOUNTS_SERVICE_RUMBO: "svc-token", ACCOUNTS_URL: "  " })).toBe(false);
     expect(aiEnabled(ON)).toBe(true);
   });
 });
@@ -53,7 +56,7 @@ describe("aiParsePlan", () => {
       budget_total: { amount_minor: 60000, currency: "EUR" },
     });
     expect(seen).toHaveLength(1);
-    expect(seen[0]!.url).toBe("https://swgxlydagofazjtlqeiu.supabase.co/functions/v1/ai");
+    expect(seen[0]!.url).toBe(`${HUB}/functions/v1/ai`);
     expect(seen[0]!.headers["x-accounts-service"]).toBe("svc-token");
     expect(seen[0]!.headers["x-accounts-product"]).toBe("rumbo");
     expect(seen[0]!.body).toMatchObject({ product: "rumbo", model: AI_MODEL, fallback: [], tool_choice: { type: "function", function: { name: "set_trip_request" } } });
