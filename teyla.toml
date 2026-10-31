@@ -105,3 +105,46 @@ name = "first-run check passes on a clean machine"
 how = "clone the repo, run ./check.sh, read what it says"
 status = "untested"                     # ok | broken | untested
 # confirmed = 2026-01-01
+
+
+# ---------------------------------------------------------------------------
+# The security contract. `teyla shield check .` reads it (docs/CONTRACT.md in the teyla repo).
+# Tier follows [productize] users = "owner": one person, on a public URL, so the key, the lockout,
+# the patched dependencies and a tested revocation matter, and there is no cross-user surface.
+# ---------------------------------------------------------------------------
+[security]
+# The store holds: an optional name, home city and airports, travel history (places and dates), busy
+# windows, watches, price sightings with provider URLs, feedback and trip plans. No payment data, no
+# health data, no messages, no files. Agents also add free-text notes to the profile.
+data = ["account", "location"]
+# Legs of the agent surface (the 13 MCP tools, the same code as /api/v1). Private data: the profile,
+# history and plans are readable through the tools. Untrusted content: agents write web-sourced
+# observations, notes and trips through them. Outbound is cut: no tool fetches a URL an agent supplies;
+# the server calls only the fixed provider hosts in docs/PRIVACY.md, with place names, dates and party
+# size. Residual: a place or sentence an agent supplies is a search term for those providers (and the
+# model hub); tests/security/injection.test.ts asserts that no canary or other tool's data leaves.
+trifecta = ["private-data", "untrusted-content"]
+secrets = "runtime-env"                 # RUMBO_OWNER_KEY and the provider keys are env vars on the droplet
+hosts = "docs/PRIVACY.md"
+# url_key = true is the truth: /mcp/<key> exists for connectors that cannot send a header (Claude.ai,
+# ChatGPT). ACCEPTED RISK, reason and mitigations in docs/PRIVACY.md ("Accepted risk"): one owner, wrong
+# path keys hit the same lockout as wrong bearers, rotating RUMBO_OWNER_KEY revokes the URL, the key is
+# redacted from everything Rumbo prints, and Caddy must not log /mcp/*. OAuth (docs/MCP-OAUTH.md) is the exit.
+mcp = { auth = "bearer", url_key = true, rate_limit = true, static_tools = true }
+# No Postgres and no Supabase, so no RLS. Tenancy is enforced in createStore(db, userId)
+# (src/server/store.ts: every query filters on user_id) and the handlers take the store from the
+# authenticated principal; tests/security/tenancy.test.ts proves it table by table.
+rls = "none"
+release = ["leak", "hosts", "rls-test<30d", "mcp-probe<30d"]
+
+[[security.evidence]]
+what = "rls-test"
+commit = "879ba79"
+date = 2026-10-31
+how = "npx vitest run tests/security/tenancy.test.ts (anonymous, wrong key and A-vs-B on every tenant table; the store enforces tenancy, there is no RLS)"
+
+[[security.evidence]]
+what = "mcp-probe"
+commit = "879ba79"
+date = 2026-10-31
+how = "teyla mcp probe http://127.0.0.1:<port>/mcp --token <test key> --budget 1400 --i-own-this --allow-network against next start with a temp RUMBO_DB: 7 OK, 1 SKIP (no tool takes a url). The /mcp/<key> form was probed too: url-key and auth-required are FIX by design (accepted risk in docs/PRIVACY.md)"

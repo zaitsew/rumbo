@@ -12,7 +12,9 @@ export const SCHEMA_VERSION = "rumbo.v1";
 const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const Instant = z.string().datetime({ offset: true });
 const Iata = z.string().regex(/^[A-Z]{3}$/, "IATA code");
-const Url = z.string().url();
+// Links are rendered as <a href> in the feed and in plans, and agents write them. A well-formed URL is not enough:
+// "javascript:", "data:", "file:" and "gopher:" are valid URLs too. Only http(s) is accepted (Teyla Shield, SH7).
+const Url = z.string().url().refine((u) => /^https?:\/\//i.test(u), "must be an http or https URL");
 
 export const MoneySchema = z.object({
   amount_minor: z.number().int().nonnegative(),

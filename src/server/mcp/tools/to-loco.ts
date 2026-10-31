@@ -25,8 +25,15 @@ export const tool = defineTool({
       if (o) observations.push(o);
     }
     const trip = { ...(args.trip_slug ? { slug: args.trip_slug } : {}), ...(args.trip_id ? { id: args.trip_id } : {}) };
+    // A plan that was just started has nothing to propose yet. That is the caller's state, not a server fault.
+    let proposal: ReturnType<typeof toLocoProposal>;
+    try {
+      proposal = toLocoProposal(plan, observations, trip);
+    } catch {
+      throw new ToolError("nothing_to_propose", "This plan has no saved flights, stays or activities to propose yet. Choose options with rumbo_plan_choose first.");
+    }
     return {
-      loco_propose_args: toLocoProposal(plan, observations, trip),
+      loco_propose_args: proposal,
       next: "Call Loco's loco_propose with loco_propose_args. Check the prices on the pages before anyone books; they are sightings, not quotes.",
       missing_observations: [...ids].filter((id) => !observations.some((o) => o.id === id)),
     };
