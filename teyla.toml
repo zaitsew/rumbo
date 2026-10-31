@@ -136,3 +136,15 @@ mcp = { auth = "bearer", url_key = true, rate_limit = true, static_tools = true 
 # authenticated principal; tests/security/tenancy.test.ts proves it table by table.
 rls = "none"
 release = ["leak", "hosts", "rls-test<30d", "mcp-probe<30d"]
+
+[[security.evidence]]
+what = "rls-test"
+commit = "879ba79"
+date = 2026-10-31
+how = "npx vitest run tests/security/tenancy.test.ts (anonymous, wrong key and A-vs-B on every tenant table; the store enforces tenancy, there is no RLS)"
+
+[[security.evidence]]
+what = "mcp-probe"
+commit = "879ba79"
+date = 2026-10-31
+how = "teyla mcp probe http://127.0.0.1:<port>/mcp --token <test key> --budget 1400 --i-own-this --allow-network against next start with a temp RUMBO_DB: 7 OK, 1 SKIP (no tool takes a url). The /mcp/<key> form was probed too: url-key and auth-required are FIX by design (accepted risk in docs/PRIVACY.md)"
