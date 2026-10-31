@@ -4,8 +4,8 @@ import { observationId } from "./sources/id";
 import type { Env, SearchContext, Source, SourceQuery } from "./sources/types";
 
 /**
- * SAWk is Ivan's other tool: a ranked feed of offline events (concerts, exhibitions, talks) for the
- * cities he lives in and travels to. Rumbo reads it, never writes it (D7: events come from SAWk).
+ * SAWk is the owner's other tool: a ranked feed of offline events (concerts, exhibitions, talks) for the
+ * cities the owner lives in and travels to. Rumbo reads it, never writes it (D7: events come from SAWk).
  *
  *   GET ${SAWK_URL}/api/feed?city=&from=&to=&limit=20   Authorization: Bearer ${SAWK_TOKEN}
  *   -> { from, to, items: [{ event: { id, title, startsAt, city, country, venue, category, tags,

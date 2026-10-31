@@ -55,7 +55,7 @@ requests those hosts, and the search text in them is the route, place and dates 
 
 | # | Trigger | Host | What is sent | Default on | Consent | Turn it off |
 |---|---|---|---|---|---|---|
-| 1 | `rumbo_plan_start`, the plan form or `POST /api/v1/plans` with free text (`aiParsePlan`), and the "why" line under the top feed items (`aiWhy`) | `*.supabase.co` | The accounts hub (a Supabase project; its exact host is the `ACCOUNTS_URL` default in `src/server/ai.ts`), path `/functions/v1/ai`. For a plan: the owner's trip sentence (first 600 characters), today's date and the owner's home city, to Claude Haiku 5.5. For the feed: an item title and up to 7 ranker reasons. A hub service token goes in a header, with the product name `rumbo` and the fixed user label `owner`. Never the profile, history, e-mail or any key. | Only when `ACCOUNTS_SERVICE_RUMBO` is set on the server | The owner sets the token on purpose in the server's env file (`.env.example`, `deploy/droplet/.env.example`); there is no other user. | Unset `ACCOUNTS_SERVICE_RUMBO` or set `RUMBO_AI=off` |
+| 1 | `rumbo_plan_start`, the plan form or `POST /api/v1/plans` with free text (`aiParsePlan`), and the "why" line under the top feed items (`aiWhy`) | `*.supabase.co` | The accounts hub (a Supabase project; its host is the `ACCOUNTS_URL` env var, which has no default in the code), path `/functions/v1/ai`. For a plan: the owner's trip sentence (first 600 characters), today's date and the owner's home city, to Claude Haiku 5.5. For the feed: an item title and up to 7 ranker reasons. A hub service token goes in a header, with the product name `rumbo` and the fixed user label `owner`. Never the profile, history, e-mail or any key. | Only when `ACCOUNTS_SERVICE_RUMBO` and `ACCOUNTS_URL` are set on the server | The owner sets the token on purpose in the server's env file (`.env.example`, `deploy/droplet/.env.example`); there is no other user. | Unset `ACCOUNTS_SERVICE_RUMBO` or set `RUMBO_AI=off` |
 
 The hub forwards the request to Anthropic. The model only returns a forced tool call; its answer is
 checked against a schema, and a sentence with a number not found in the reasons is dropped. Rumbo works
@@ -71,7 +71,7 @@ the variable is set.
 - `RUMBO_OAUTH_ISSUER` and `RUMBO_OAUTH_JWKS_URL`: only when OAuth for `/mcp` is on (`docs/MCP-OAUTH.md`).
   Rumbo fetches the issuer's discovery document and signing keys (public data, no user content), at most
   a few times an hour.
-- `ACCOUNTS_URL`: overrides the hub host in model-provider row 1.
+- `ACCOUNTS_URL`: the hub host in model-provider row 1. Required for the AI features; no default.
 
 ## Where data lives
 
