@@ -44,6 +44,24 @@ function withBearer(request: Request, key: string): Request {
   return new Request("http://rumbo.invalid/mcp", { method: "GET", headers });
 }
 
+/** The first `tools/call` in a body whose `params.arguments` is present but not an object. */
+function badArguments(body: string): { id: unknown } | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return null; // not JSON: the SDK has its own parse error for that
+  }
+  for (const msg of Array.isArray(parsed) ? parsed : [parsed]) {
+    if (!msg || typeof msg !== "object") continue;
+    const m = msg as { id?: unknown; method?: unknown; params?: { arguments?: unknown } };
+    if (m.method !== "tools/call" || !m.params || typeof m.params !== "object") continue;
+    const a = m.params.arguments;
+    if (a !== undefined && (a === null || typeof a !== "object" || Array.isArray(a))) return { id: m.id ?? null };
+  }
+  return null;
+}
+
 export async function handleMcp(request: Request, opts: { pathKey?: string } = {}): Promise<Response> {
   const url = new URL(request.url);
   // A key in the path always counts as a credential; one that cannot be decoded counts as a wrong guess.
@@ -70,6 +88,11 @@ export async function handleMcp(request: Request, opts: { pathKey?: string } = {
     if (declared > MAX_BODY_BYTES) return errorResponse(413, "body_too_large", `Bodies are limited to ${MAX_BODY_BYTES} bytes.`);
     const body = await request.text();
     if (body.length > MAX_BODY_BYTES) return errorResponse(413, "body_too_large", `Bodies are limited to ${MAX_BODY_BYTES} bytes.`);
+
+    // The SDK answers a non-object `params.arguments` with -32603 (internal error). It is the caller's
+    // mistake, so say so with -32602 (invalid params) before the request reaches the SDK.
+    const bad = badArguments(body);
+    if (bad) return jsonResponse({ jsonrpc: "2.0", id: bad.id, error: { code: -32602, message: "Invalid params: `arguments` must be an object." } });
 
     const headers = new Headers(request.headers);
     headers.delete("authorization"); // not needed past this point; keeps the key out of anything that echoes headers

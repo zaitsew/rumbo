@@ -62,6 +62,8 @@ export function defineTool<S extends z.ZodType>(tool: ToolDef<S>): ToolDef<S> {
 /** The agent's own name wins, then the one in the request, then a neutral label. */
 export function agentName(given: string | undefined, ctx: ToolContext): string {
   const name = (given?.trim() || ctx.agent || "agent").slice(0, 40);
+  // The name is stored and echoed to other agents, so it is a label, not free text (tests/security/injection.test.ts).
+  if (!AGENT_OK.test(name)) throw new ToolError("invalid_agent", "Agent names use letters, digits and : _ . - only (for example claude-scheduled).");
   if (isReservedAgent(name)) throw new ToolError("reserved_agent", `"${name}" is the owner's name; pick your own agent name (for example claude-scheduled).`);
   return name;
 }
