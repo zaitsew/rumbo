@@ -137,6 +137,12 @@ mcp = { auth = "bearer", url_key = true, rate_limit = true, static_tools = true 
 rls = "none"
 release = ["leak", "hosts", "rls-test<30d", "mcp-probe<30d"]
 
+[[security.accepted]]
+what = "mcp.url_key"
+why = "connectors without headers need /mcp/<key>; one owner, same lockout as bad bearers, rotation revokes it, key redacted from logs; OAuth is the exit"
+doc = "docs/PRIVACY.md"
+until = 2027-04-30
+
 [[security.evidence]]
 what = "rls-test"
 commit = "879ba79"
