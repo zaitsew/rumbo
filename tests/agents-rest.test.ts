@@ -77,7 +77,7 @@ describe("GET /api/v1/brief", () => {
     expect(ok.status).toBe(200);
     const body = (await ok.json()) as { agent: string; rules: string[]; report: { examples: unknown } };
     expect(body.agent).toBe("grok-task");
-    expect(body.rules.join(" ")).toMatch(/never scrape/i);
+    expect(body.rules.join(" ")).toMatch(/official connectors/);
     expect(body.report.examples).toBeTruthy();
   });
 });

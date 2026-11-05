@@ -125,8 +125,8 @@ export const duffel: Source = {
   dailyCap: 40, // $0.005 a search above the free ratio: at most $0.20 a day
   enabled: (env: Env) => Boolean(env.DUFFEL_TOKEN) && env.RUMBO_ALLOW_PAID_DUFFEL === "1",
   why_disabled(env) {
-    if (!env.DUFFEL_TOKEN) return "set DUFFEL_TOKEN (duffel.com dashboard) and RUMBO_ALLOW_PAID_DUFFEL=1 once the price is approved";
-    if (env.RUMBO_ALLOW_PAID_DUFFEL !== "1") return "paid source: set RUMBO_ALLOW_PAID_DUFFEL=1 to approve the price (docs/SOURCES.md)";
+    if (!env.DUFFEL_TOKEN) return "DUFFEL_TOKEN is not set (duffel.com dashboard); RUMBO_ALLOW_PAID_DUFFEL=1 records the owner's approval of the price";
+    if (env.RUMBO_ALLOW_PAID_DUFFEL !== "1") return "paid source: RUMBO_ALLOW_PAID_DUFFEL=1 records the owner's approval of the price (docs/SOURCES.md)";
     return null;
   },
   callsFor: (q) => (q.kind === "flights" ? planPairs(q).length : 0),

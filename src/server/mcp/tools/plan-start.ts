@@ -11,10 +11,10 @@ export const tool = defineTool({
   title: "Start a trip plan",
   hints: { readOnly: false, destructive: false, openWorld: true },
   description:
-    "Start a trip plan from the owner's own words or from fields. A sentence such as \"4 days of kitesurf in December, under 600 euros, with my wife\" works in English, Spanish or Russian: Rumbo reads it, " +
+    "Starts a trip plan from the owner's own words or from fields. A sentence such as \"4 days of kitesurf in December, under 600 euros, with my wife\" works in English, Spanish or Russian: Rumbo reads it, " +
     "ranks places from its destination pool and fetches live fares for the best few; when the sentence names one place it plans that place at once. " +
-    "Structured fields win over the sentence. Fares, stays and prices come only from sources Rumbo called; you never supply a price. " +
-    "A start makes a few paid-quota source calls, so call it once per request the owner made. Nothing is booked. The answer is the plan: show its candidates, then use rumbo_plan_choose.",
+    "Structured fields win over the sentence. Fares, stays and prices come only from sources Rumbo called; the tool has no price input. " +
+    "Each start makes a few paid-quota source calls. Nothing is booked. The answer is the plan with its candidates and a `disclaimer` about prices; rumbo_plan_choose records the owner's pick.",
   inputSchema: z
     .object({
       text: z.string().trim().min(1).max(600).optional().describe("The owner's own words about the trip."),
@@ -24,10 +24,10 @@ export const tool = defineTool({
       travellers: R.travellers.describe("{ adults, children }. Defaults to the profile."),
       origin: R.origin.describe("IATA codes to fly from. Defaults to the profile's home airports."),
       interests: R.interests.removeDefault().optional(),
-      budget_total: R.budget_total.describe("The owner's own budget, in minor units. Never estimate one."),
+      budget_total: R.budget_total.describe("The owner's stated budget, in minor units."),
       needs: R.needs.removeDefault().optional().describe("Any of flights, stay, car, activities, events. Default: all but car."),
     })
-    .refine((a) => !!a.text || Object.values(a).some((v) => v !== undefined), { message: "Give text or at least one field." }),
+    .refine((a) => !!a.text || Object.values(a).some((v) => v !== undefined), { message: "The request needs text or at least one field." }),
   handler: async (args, ctx) => {
     const { text, ...request } = args;
     try {

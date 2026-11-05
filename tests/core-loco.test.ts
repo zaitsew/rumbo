@@ -89,7 +89,7 @@ describe("toLocoProposal", () => {
       expect(o.seen.by).toBe("rumbo");
       expect(o.seen.at).toMatch(/^2026-10-23T/);
       expect(o.details).toContain(`Seen ${o.seen.at} on `);
-      expect(o.details).toContain("Check the price on the page before booking.");
+      expect(o.details).toContain("The price is a sighting from the source, not a quote.");
     }
     expect(opt("fl").seen).toMatchObject({ at: prov.seen_at, url: "https://www.kiwi.com/book/1", price: { amount: 89, currency: "EUR" } });
     expect(opt("fl").url).toBe("https://www.kiwi.com/book/1");

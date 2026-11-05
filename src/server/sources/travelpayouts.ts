@@ -129,7 +129,7 @@ export const travelpayouts: Source = {
   paid: false,
   dailyCap: 500, // our own ceiling; Travelpayouts states no limit for the data endpoints
   enabled: (env: Env) => Boolean(env.TRAVELPAYOUTS_TOKEN),
-  why_disabled: (env: Env) => (env.TRAVELPAYOUTS_TOKEN ? null : "set TRAVELPAYOUTS_TOKEN (free, travelpayouts.com > Tools > API)"),
+  why_disabled: (env: Env) => (env.TRAVELPAYOUTS_TOKEN ? null : "TRAVELPAYOUTS_TOKEN is not set (a free token comes from travelpayouts.com > Tools > API)"),
   callsFor: (q) => (q.kind === "flights" ? planRequests(q).length : 0),
   async search(q, ctx) {
     if (q.kind !== "flights") return [];

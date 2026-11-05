@@ -8,8 +8,8 @@ export const tool = defineTool({
   title: "React to a feed item",
   hints: { readOnly: false, destructive: false, openWorld: false },
   description:
-    "Record the owner's reaction to a feed item: seen, saved, dismissed, booked, more-like-this or less-like-this. " +
-    "Call it only when the owner said so; never guess a reaction. A dismissed or booked item leaves the feed.",
+    "Records a reaction to a feed item: seen, saved, dismissed, booked, more-like-this or less-like-this. " +
+    "The ranking treats a stored reaction as the owner's own and a dismissed or booked item leaves the feed.",
   inputSchema: FeedbackSchema.extend({ note: z.string().max(500).optional() }),
   handler: (args, ctx) => {
     try {

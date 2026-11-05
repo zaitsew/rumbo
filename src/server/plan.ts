@@ -326,8 +326,8 @@ function newId(): string {
 export async function startPlan(userId: string, input: StartInput, deps: PlanDeps = {}): Promise<Plan> {
   const ctx = context(userId, deps);
   const profile = ctx.store.getProfile();
-  if (!profile) throw new PlanError("Fill in your profile first: Rumbo needs your home airports.", "no_profile");
-  if (!input.text?.trim() && !input.request) throw new PlanError("Describe the trip, or fill in the form.");
+  if (!profile) throw new PlanError("No profile yet: Rumbo needs the home airports to plan a trip.", "no_profile");
+  if (!input.text?.trim() && !input.request) throw new PlanError("The request has no text and no fields.");
 
   const request = complete(await readRequest(input, profile, ctx), profile, ctx.today);
   const history = ctx.store.listHistory();
@@ -417,17 +417,17 @@ export function pickDates(plan: Plan, candidate: DestinationCandidate, stored: O
     from = addDays(from, 1);
   }
   if (busy?.length && addDays(window.from, nights.min) <= window.to) {
-    throw new PlanError(`Every ${nights.min}-night stay between ${window.from} and ${window.to} clashes with your busy dates: widen the window or give the dates.`);
+    throw new PlanError(`Every ${nights.min}-night stay between ${window.from} and ${window.to} clashes with the busy dates; a wider window or explicit dates avoid the clash.`);
   }
   const to = window.to;
-  if (to <= from) throw new PlanError(`The window ${window.from} to ${window.to} is too short for a stay: widen it or give the dates.`);
-  if (clashes(from, to, busy)) throw new PlanError(`The window ${window.from} to ${window.to} clashes with your busy dates: widen it or give the dates.`);
+  if (to <= from) throw new PlanError(`The window ${window.from} to ${window.to} is too short for a stay; a wider window or explicit dates fit one.`);
+  if (clashes(from, to, busy)) throw new PlanError(`The window ${window.from} to ${window.to} clashes with the busy dates; a wider window or explicit dates avoid the clash.`);
   return { from, to };
 }
 
 function validDates(d: TripDates, today: string): string | null {
   const ok = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
-  if (!ok(d.from) || !ok(d.to)) return "Dates must be YYYY-MM-DD.";
+  if (!ok(d.from) || !ok(d.to)) return "Dates are written YYYY-MM-DD.";
   if (d.to < d.from) return "The trip cannot end before it starts.";
   if (d.from < today) return "The trip cannot start in the past.";
   if (daysBetween(d.from, d.to) > 60) return "Trips are limited to 60 nights.";
@@ -438,12 +438,12 @@ function validDates(d: TripDates, today: string): string | null {
 export async function choosePlace(userId: string, id: string, place: string, dates?: TripDates, deps: PlanDeps = {}): Promise<Plan> {
   const ctx = context(userId, deps);
   const profile = ctx.store.getProfile();
-  if (!profile) throw new PlanError("Fill in your profile first: Rumbo needs your home airports.", "no_profile");
+  if (!profile) throw new PlanError("No profile yet: Rumbo needs the home airports to plan a trip.", "no_profile");
   const plan = ctx.store.getPlan(id);
   if (!plan) throw new PlanError("That plan does not exist.", "not_found");
   if (plan.status === "archived") throw new PlanError("That plan is archived.");
   const wanted = place.trim();
-  if (!wanted) throw new PlanError("Choose a place.");
+  if (!wanted) throw new PlanError("The place is empty.");
   if (dates) {
     const bad = validDates(dates, ctx.today);
     if (bad) throw new PlanError(bad);
@@ -461,7 +461,7 @@ async function planPlace(ctx: Ctx, plan: Plan, profile: Profile, candidate: Dest
   const dates = pickDates(plan, candidate, stored, given, profile.currency, origins, ctx.today, profile.busy);
   // Dates the planner picked (from an old saved plan, say) pass the same checks as dates the owner typed.
   const badDates = validDates(dates, ctx.today);
-  if (badDates) throw new PlanError(`${badDates} Change the window and choose the place again.`);
+  if (badDates) throw new PlanError(`${badDates} The dates were picked from the saved window.`);
   const nights = Math.max(1, daysBetween(dates.from, dates.to));
   const adults = r.travellers?.adults ?? profile.travellers.adults;
   const children = r.travellers?.children ?? 0;
@@ -471,7 +471,7 @@ async function planPlace(ctx: Ctx, plan: Plan, profile: Profile, candidate: Dest
   const queries: SourceQuery[] = [];
   if (r.needs.includes("flights")) {
     if (candidate.airports.length) queries.push(flightsQuery(origins, candidate.airports, { from: dates.from, to: dates.from }, { min: nights, max: nights }, r, profile));
-    else extra.push({ source: "rumbo", ok: false, calls: 0, error: `no airport known for ${candidate.place}; use the flight links` });
+    else extra.push({ source: "rumbo", ok: false, calls: 0, error: `no airport known for ${candidate.place}; the plan carries flight links instead` });
   }
   if (r.needs.includes("stay")) {
     queries.push({ kind: "stays", place: candidate.place, country: iso2, check_in: dates.from, check_out: dates.to, adults, children, child_ages: childAges({ children }), currency: profile.currency });

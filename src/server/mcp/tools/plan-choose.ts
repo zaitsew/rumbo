@@ -10,9 +10,9 @@ export const tool = defineTool({
   title: "Choose a place for a plan",
   hints: { readOnly: false, destructive: true, openWorld: true },
   description:
-    "Pick the place the owner chose for a plan and fill its flights, stay, activities and events from the sources, with links for the car. Call it only after the owner named the place; never choose for them. " +
-    "The place is one of the plan's candidates or any city by name. Give from and to (YYYY-MM-DD) only if the owner gave dates; otherwise Rumbo uses the cheapest fare found, else the start of the window. " +
-    "Nothing is booked. Calling it again for another place replaces the sections.",
+    "Records the place the owner chose for a plan and fills its flights, stay, activities and events from the sources, with links for the car. " +
+    "The place is one of the plan's candidates or any city by name. `from` and `to` (YYYY-MM-DD) are the owner's dates when given; otherwise Rumbo uses the cheapest fare found, else the start of the window. " +
+    "Nothing is booked. A second call for another place replaces the sections. Each price keeps its url and seen_at, and the answer carries a `disclaimer`.",
   inputSchema: z
     .object({
       plan_id: z.string().min(1).max(60),
@@ -20,7 +20,7 @@ export const tool = defineTool({
       from: Day.optional().describe("Trip start, if the owner gave dates."),
       to: Day.optional().describe("Trip end, if the owner gave dates."),
     })
-    .refine((a) => (a.from === undefined) === (a.to === undefined), { message: "Give both from and to, or neither.", path: ["from"] }),
+    .refine((a) => (a.from === undefined) === (a.to === undefined), { message: "from and to come as a pair: both or neither.", path: ["from"] }),
   handler: async (args, ctx) => {
     try {
       const dates = args.from && args.to ? { from: args.from, to: args.to } : undefined;

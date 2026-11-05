@@ -9,9 +9,9 @@ export const tool = defineTool({
   title: "Import past trips",
   hints: { readOnly: false, destructive: true, openWorld: false, idempotent: true },
   description:
-    "Save past trips so Rumbo knows where the owner has been and what they rated. For an agent that holds Loco's connector: call loco_list_trips and loco_get_trip, " +
-    "map each trip to {id, title, from, to, places[], rating?, tags[]} and send them here. Trips are upserted by id; nothing is removed. " +
-    `Rows are checked one by one. At most ${MAX_TRIPS} per call. Tags must be from the interest list (beach, city, ski, food, ...).`,
+    "Saves past trips so Rumbo knows where the owner has been and what they rated. An agent that holds Loco's connector can map the results of loco_list_trips and loco_get_trip " +
+    "to {id, title, from, to, places[], rating?, tags[]} and send them here. Trips are upserted by id; nothing is removed. " +
+    `Rows are checked one by one. A call takes at most ${MAX_TRIPS} trips. Tags come from the interest list (beach, city, ski, food, ...).`,
   inputSchema: z.object({ trips: z.array(z.unknown()).max(MAX_TRIPS) }),
   inputJsonSchema: (generated) => {
     const props = generated.properties as Record<string, Record<string, unknown>> | undefined;

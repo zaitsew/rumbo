@@ -17,17 +17,17 @@ export function observationItemSchema(): Record<string, unknown> {
 
 export const tool = defineTool({
   name: "rumbo_observe",
-  title: "Report what you found",
+  title: "Post observations",
   hints: { readOnly: false, destructive: true, openWorld: false },
   description:
-    "Post observations (flight, stay, car, activity, event, idea) you found. Rows are checked one by one; bad rows come back in `rejected` with the reason and the rest are stored. " +
-    "Rules: report a price only if you saw it on a page or tool result, and put that page in provenance.url and the time in provenance.seen_at; never estimate; never scrape; `id` is optional (the server derives it). " +
-    "Pass checked_watch_ids for every watch you searched, even when you found nothing, so it is not due again. Call rumbo_agent_brief first for the exact shape, one example per kind and the full rules. " +
-    `At most ${MAX_OBSERVATIONS} rows per call. \`accepted\` counts valid rows, of which \`skipped_older\` were not stored because the server already holds a newer sighting.`,
+    "Stores observations (flight, stay, car, activity, event, idea) that an agent found. Rows are checked one by one; bad rows come back in `rejected` with the reason and the rest are stored. " +
+    "A priced row is accepted with the page it was read on in provenance.url and the time in provenance.seen_at; `id` is optional because the server derives it. " +
+    "Each watch named in checked_watch_ids counts as checked, found or not, so it is not due again. rumbo_agent_brief returns the exact shape, one example per kind and the rules. " +
+    `A call takes at most ${MAX_OBSERVATIONS} rows. \`accepted\` counts valid rows, of which \`skipped_older\` were not stored because the server already holds a newer sighting.`,
   inputSchema: z.object({
-    agent: z.string().min(2).max(40).describe("Your agent name, the same on every run: claude-scheduled, codex-automation, chatgpt-task, grok-task."),
+    agent: z.string().min(2).max(40).describe("The agent's name, the same on every run, for example claude-scheduled, codex-automation, chatgpt-task or grok-task."),
     observations: z.array(z.unknown()).max(MAX_OBSERVATIONS),
-    checked_watch_ids: z.array(z.string()).max(50).optional().describe("Watches you searched, found or not."),
+    checked_watch_ids: z.array(z.string()).max(50).optional().describe("Watches that were searched, found or not."),
   }),
   inputJsonSchema: (generated) => {
     const props = generated.properties as Record<string, Record<string, unknown>> | undefined;

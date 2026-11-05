@@ -157,7 +157,7 @@ export function createKiwiSource(callTool: KiwiCallTool = mcpCallTool): Source {
     paid: false,
     dailyCap: 60,
     enabled: (env: Env) => env.RUMBO_KIWI_MCP !== "0",
-    why_disabled: (env: Env) => (env.RUMBO_KIWI_MCP === "0" ? "RUMBO_KIWI_MCP=0 switches the Kiwi MCP off; unset it to enable" : null),
+    why_disabled: (env: Env) => (env.RUMBO_KIWI_MCP === "0" ? "RUMBO_KIWI_MCP=0 switches the Kiwi MCP off; without that setting it is on" : null),
     async search(q, ctx) {
       if (q.kind !== "flights") return [];
       const raw = await callTool(kiwiArguments(q, ctx.now), ctx);
