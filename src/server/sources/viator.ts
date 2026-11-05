@@ -72,7 +72,7 @@ export function createViatorSource(): Source & { destinationCached(): boolean } 
     paid: false,
     dailyCap: 500, // our ceiling; Viator limits per 10-second window, not per day
     enabled: (env: Env) => Boolean(env.VIATOR_API_KEY),
-    why_disabled: (env: Env) => (env.VIATOR_API_KEY ? null : "set VIATOR_API_KEY (free Basic-access affiliate key, partnerresources.viator.com)"),
+    why_disabled: (env: Env) => (env.VIATOR_API_KEY ? null : "VIATOR_API_KEY is not set (a free Basic-access affiliate key comes from partnerresources.viator.com)"),
     destinationCached: () => destinations !== undefined,
     callsFor: (q) => (q.kind === "activities" ? (destinations ? 1 : 2) : 0),
     async search(q, ctx: SearchContext) {

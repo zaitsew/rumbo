@@ -7,11 +7,11 @@ export const tool = defineTool({
   title: "Read a trip plan",
   hints: { readOnly: true, destructive: false, openWorld: false },
   description:
-    "Read one plan by id, or list the owner's plans when plan_id is left out. A plan has the request, the candidate places with the cheapest fare each source returned, " +
-    "and once a place is chosen the flights, stay, activities and events, each with its price, source, link and time seen. It changes nothing. Report prices as given.",
+    "Reads one plan by id, or lists the owner's plans when plan_id is absent. A plan has the request, the candidate places with the cheapest fare each source returned, " +
+    "and once a place is chosen the flights, stay, activities and events, each with its price, source, link and time seen, plus a `disclaimer` about prices. It changes nothing.",
   inputSchema: z.object({
-    plan_id: z.string().min(1).max(60).optional().describe("A plan id from rumbo_plan_start. Leave out to list plans."),
-    include_archived: z.boolean().optional().describe("When listing, also show archived plans."),
+    plan_id: z.string().min(1).max(60).optional().describe("A plan id from rumbo_plan_start; absent lists plans."),
+    include_archived: z.boolean().optional().describe("When listing, archived plans are included."),
   }),
   handler: (args, ctx) => {
     if (!args.plan_id) {

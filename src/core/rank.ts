@@ -534,7 +534,7 @@ export function rank(observations: Observation[], ctx: RankContext): FeedItem[] 
       const r = rangeOf(o);
       const over = r !== null && r.to < msToDay(now.getTime());
       const expired = o.provenance.expires_at !== undefined && Date.parse(o.provenance.expires_at) < now.getTime();
-      reasons.push(over ? "already over" : expired ? "offer has expired" : "price is stale, check before booking");
+      reasons.push(over ? "already over" : expired ? "offer has expired" : "price is stale and may have changed");
     }
     reasons.push(...deal.reasons);
 

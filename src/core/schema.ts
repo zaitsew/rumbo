@@ -14,7 +14,7 @@ const Instant = z.string().datetime({ offset: true });
 const Iata = z.string().regex(/^[A-Z]{3}$/, "IATA code");
 // Links are rendered as <a href> in the feed and in plans, and agents write them. A well-formed URL is not enough:
 // "javascript:", "data:", "file:" and "gopher:" are valid URLs too. Only http(s) is accepted (Teyla Shield, SH7).
-const Url = z.string().url().refine((u) => /^https?:\/\//i.test(u), "must be an http or https URL");
+const Url = z.string().url().refine((u) => /^https?:\/\//i.test(u), "only http and https URLs are accepted");
 
 export const MoneySchema = z.object({
   amount_minor: z.number().int().nonnegative(),

@@ -29,7 +29,7 @@ function info(): Response {
   return jsonResponse(
     {
       name: "rumbo",
-      transport: "Streamable HTTP, stateless: POST JSON-RPC to this URL with Accept: application/json, text/event-stream",
+      transport: "Streamable HTTP, stateless: JSON-RPC arrives by POST at this URL with Accept: application/json, text/event-stream",
       tools: TOOLS.map((t) => t.name),
       docs: "/llms.txt",
     },
@@ -77,11 +77,11 @@ export async function handleMcp(request: Request, opts: { pathKey?: string } = {
     return auth.response;
   }
   if (!apiLimiter().take(auth.principal)) {
-    return errorResponse(429, "rate_limited", "Too many requests. Slow down.", { "Retry-After": "60" });
+    return errorResponse(429, "rate_limited", "Too many requests; the limit resets within a minute.", { "Retry-After": "60" });
   }
 
   if (request.method === "GET" || request.method === "DELETE") return info();
-  if (request.method !== "POST") return errorResponse(405, "method_not_allowed", "Use POST.", { Allow: "POST" });
+  if (request.method !== "POST") return errorResponse(405, "method_not_allowed", "Only POST is accepted.", { Allow: "POST" });
 
   try {
     const declared = Number(request.headers.get("content-length") ?? 0);
@@ -92,7 +92,7 @@ export async function handleMcp(request: Request, opts: { pathKey?: string } = {
     // The SDK answers a non-object `params.arguments` with -32603 (internal error). It is the caller's
     // mistake, so say so with -32602 (invalid params) before the request reaches the SDK.
     const bad = badArguments(body);
-    if (bad) return jsonResponse({ jsonrpc: "2.0", id: bad.id, error: { code: -32602, message: "Invalid params: `arguments` must be an object." } });
+    if (bad) return jsonResponse({ jsonrpc: "2.0", id: bad.id, error: { code: -32602, message: "Invalid params: `arguments` is not an object." } });
 
     const headers = new Headers(request.headers);
     headers.delete("authorization"); // not needed past this point; keeps the key out of anything that echoes headers

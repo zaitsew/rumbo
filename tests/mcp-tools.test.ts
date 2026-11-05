@@ -264,8 +264,8 @@ describe("rumbo_agent_brief", () => {
     expect(stays.searches[0]).toMatchObject({ connector: "booking", report_as: "stay" });
     expect(stays.searches[0].deep_links.map((l: any) => l.label).join()).toMatch(/Booking\.com/); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    expect(brief.rules.join(" ")).toMatch(/Never scrape/);
-    expect(brief.rules.join(" ")).toMatch(/never estimate|Never estimate/i);
+    expect(brief.rules.join(" ")).toMatch(/provenance\.url/);
+    expect(brief.rules.join(" ")).toMatch(/priced row without a page is rejected/);
     expect(Object.keys(brief.report.examples).sort()).toEqual(["activity", "car", "event", "flight", "idea", "stay"]);
   });
 
@@ -274,7 +274,7 @@ describe("rumbo_agent_brief", () => {
     s.upsertWatch(watch("r1"));
     const only = (await call("rumbo_agent_brief", { agent: "grok-task", connectors: ["Spotify"] })).body;
     expect(only.due_watches[0].searches[0].connector).toBe("deep-link");
-    expect(only.due_watches[0].searches[0].ask).toMatch(/Do not guess/);
+    expect(only.due_watches[0].searches[0].ask).toMatch(/No flight connector matches/);
     const unknown = (await call("rumbo_agent_brief", { agent: "grok-task" })).body;
     expect(unknown.due_watches[0].searches.map((x: any) => x.connector)).toEqual(["kiwi", "expedia"]); // eslint-disable-line @typescript-eslint/no-explicit-any
     expect(unknown.due_watches[0].searches[0].available).toBeNull();
@@ -343,7 +343,7 @@ describe("rumbo_plan_start, rumbo_plan_get and rumbo_plan_choose", () => {
     expect((await call("rumbo_plan_start", { text: "   " })).body.error).toBe("invalid_input");
   });
 
-  it("starts from a sentence, ranks places with fares from the sources, and tells the agent to ask the owner", async () => {
+  it("starts from a sentence, ranks places with fares from the sources, and says the place is the owner's choice", async () => {
     planProfile();
     const r = await call("rumbo_plan_start", { text: "5 nights of food and culture in December" }, "claude-scheduled");
     expect(r.isError).toBe(false);
@@ -353,7 +353,8 @@ describe("rumbo_plan_start, rumbo_plan_get and rumbo_plan_choose", () => {
     expect(plan.candidates.length).toBeGreaterThan(1);
     expect(plan.candidates.some((c: any) => c.cheapest_flight?.source === "fake-fares")).toBe(true); // eslint-disable-line @typescript-eslint/no-explicit-any
     expect(plan.source_notices.some((n: any) => n.source === "fake-fares" && n.ok)).toBe(true); // eslint-disable-line @typescript-eslint/no-explicit-any
-    expect(r.body.next).toMatch(/Ask the owner/);
+    expect(r.body.next).toMatch(/owner's choice/);
+    expect(r.body.plan.disclaimer).toMatch(/sightings/);
     expect(s.getPlan(plan.id)?.request.text).toBe("5 nights of food and culture in December");
   });
 

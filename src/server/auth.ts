@@ -111,7 +111,7 @@ export function authenticate(input: AuthInput, env: Env = process.env): AuthResu
   const key = ownerKey(env);
   if (!key) {
     warnNoKey();
-    return { ok: false, status: 503, error: "not_configured", detail: "RUMBO_OWNER_KEY is not set on this server. Set it in .env and restart.", presented: false };
+    return { ok: false, status: 503, error: "not_configured", detail: "RUMBO_OWNER_KEY is not set on this server; it comes from .env at start.", presented: false };
   }
 
   const bearer = /^Bearer\s+(.+)$/i.exec(input.authorization?.trim() ?? "")?.[1]?.trim();
@@ -124,7 +124,7 @@ export function authenticate(input: AuthInput, env: Env = process.env): AuthResu
     ok: false,
     status: 401,
     error: "unauthorized",
-    detail: "Send `Authorization: Bearer <RUMBO_OWNER_KEY>` or sign in at /signin.",
+    detail: "The request carries no valid key; the server accepts `Authorization: Bearer <RUMBO_OWNER_KEY>` or a sign-in at /signin.",
     presented: !!bearer, // a stale cookie after a key rotation must not lock the browser out
   };
 }
@@ -147,7 +147,7 @@ export function authorize(request: Request): Authorized {
   const ip = clientIp(request.headers);
   const lock = authLockout();
   if (ownerKey() && lock.locked(ip)) {
-    return { ok: false, response: errorResponse(429, "too_many_attempts", "Too many wrong keys. Wait ten minutes.", { "Retry-After": "600" }) };
+    return { ok: false, response: errorResponse(429, "too_many_attempts", "Too many wrong keys; the lockout lasts ten minutes.", { "Retry-After": "600" }) };
   }
   const result = authenticate(authInputFrom(request));
   if (result.ok) return { ok: true, principal: result.principal };

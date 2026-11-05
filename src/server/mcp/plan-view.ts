@@ -2,7 +2,7 @@ import type { Plan } from "../../core/schema";
 import { formatMoney } from "../../core/money";
 import { planNotices } from "../plan";
 import type { Store } from "../store";
-import { observationView } from "./format";
+import { PRICE_DISCLAIMER, observationView } from "./format";
 
 /**
  * A plan as an agent reads it: the request, the candidates with the fares sources returned, and the
@@ -21,6 +21,7 @@ export function planView(plan: Plan, store: Store, now: Date) {
   }
   return {
     id: plan.id,
+    disclaimer: PRICE_DISCLAIMER,
     status: plan.status,
     created_at: plan.created_at,
     request: plan.request,
@@ -43,10 +44,11 @@ export function planView(plan: Plan, store: Store, now: Date) {
   };
 }
 
+/** Where the plan stands and which tool moves it on, as a statement of fact. */
 export function nextStep(plan: Plan): string {
-  if (plan.status === "archived") return "This plan is archived. Start a new one with rumbo_plan_start.";
+  if (plan.status === "archived") return "This plan is archived; rumbo_plan_start makes a new one.";
   if (plan.status === "choosing" || !plan.chosen) {
-    return "Ask the owner which place they want, then call rumbo_plan_choose with plan_id and place. Do not choose for them.";
+    return "No place is chosen yet. The place is the owner's choice; rumbo_plan_choose records it from plan_id and place.";
   }
-  return "Report the sections as given: prices are sightings from the sources named, not quotes, so check them on the page before anyone books. To hand the plan to Loco, call rumbo_to_loco.";
+  return "A place is chosen and the sections hold the sightings, each with its source and time seen. rumbo_to_loco turns the plan into loco_propose arguments.";
 }

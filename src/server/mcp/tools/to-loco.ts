@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { toLocoProposal } from "../../../core/loco";
 import type { Observation } from "../../../core/schema";
+import { PRICE_DISCLAIMER } from "../format";
 import { defineTool, ToolError } from "../tool";
 
 export const tool = defineTool({
@@ -8,8 +9,8 @@ export const tool = defineTool({
   title: "Plan as a Loco proposal",
   hints: { readOnly: true, destructive: false, openWorld: false },
   description:
-    "Turn a Rumbo plan into the arguments for Loco's loco_propose tool. Rumbo does not call Loco and nothing is booked: you call loco_propose yourself with `loco_propose_args`, " +
-    "and the people on the trip decide. Pass trip_slug or trip_id of the Loco trip it belongs to.",
+    "Turns a Rumbo plan into the arguments for Loco's loco_propose tool. Rumbo does not call Loco and nothing is booked: the agent that holds both connectors passes `loco_propose_args` to loco_propose, " +
+    "and the people on the trip decide. `trip_slug` or `trip_id` names the Loco trip it belongs to. The answer carries a `disclaimer` about prices.",
   inputSchema: z.object({
     plan_id: z.string().min(1),
     trip_slug: z.string().optional(),
@@ -30,11 +31,12 @@ export const tool = defineTool({
     try {
       proposal = toLocoProposal(plan, observations, trip);
     } catch {
-      throw new ToolError("nothing_to_propose", "This plan has no saved flights, stays or activities to propose yet. Choose options with rumbo_plan_choose first.");
+      throw new ToolError("nothing_to_propose", "This plan has no saved flights, stays or activities yet; rumbo_plan_choose fills them.");
     }
     return {
+      disclaimer: PRICE_DISCLAIMER,
       loco_propose_args: proposal,
-      next: "Call Loco's loco_propose with loco_propose_args. Check the prices on the pages before anyone books; they are sightings, not quotes.",
+      next: "loco_propose_args is the argument object of Loco's loco_propose. Its prices are sightings, not quotes.",
       missing_observations: [...ids].filter((id) => !observations.some((o) => o.id === id)),
     };
   },

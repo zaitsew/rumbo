@@ -88,9 +88,9 @@ function hasPrice(o: Observation): boolean {
 function checkRules(o: Observation, now: Date): void {
   const seen = Date.parse(o.provenance.seen_at);
   if (seen > now.getTime() + FUTURE_SLACK_MS) throw new Error("provenance.seen_at is in the future");
-  if (o.provenance.expires_at && Date.parse(o.provenance.expires_at) <= seen) throw new Error("provenance.expires_at must be after seen_at");
+  if (o.provenance.expires_at && Date.parse(o.provenance.expires_at) <= seen) throw new Error("provenance.expires_at is not after provenance.seen_at");
   if (hasPrice(o) && !o.provenance.url && !o.book_url) {
-    throw new Error("a price needs the page it was read on: set provenance.url (or book_url). Never estimate a price; drop it or post an `idea` without one");
+    throw new Error("a price needs the page it was read on in provenance.url (or book_url); an `idea` row carries no price");
   }
   // A trip already over is not rejected: the ranker marks it stale and keeps it out of the feed.
   switch (o.kind) {
@@ -100,7 +100,7 @@ function checkRules(o: Observation, now: Date): void {
       break;
     case "stay":
       if (o.price_total.amount_minor === 0) throw new Error("price_total 0 is not a rate");
-      if (o.check_out <= o.check_in) throw new Error("check_out must be after check_in");
+      if (o.check_out <= o.check_in) throw new Error("check_out is not after check_in");
       break;
     case "car":
       if (o.dropoff_date < o.pickup_date) throw new Error("dropoff_date is before pickup_date");
@@ -128,7 +128,7 @@ export function ingestObservations(store: Store, rows: unknown[], opts: IngestOp
 
   rows.forEach((raw, index) => {
     try {
-      if (typeof raw !== "object" || raw === null || Array.isArray(raw)) throw new Error("a row must be an object");
+      if (typeof raw !== "object" || raw === null || Array.isArray(raw)) throw new Error("a row is not an object");
       const row = { ...(raw as Record<string, unknown>) };
       const prov = typeof row.provenance === "object" && row.provenance !== null ? { ...(row.provenance as Record<string, unknown>) } : row.provenance;
       if (opts.agent && typeof prov === "object" && prov !== null) (prov as Record<string, unknown>).agent = opts.agent;

@@ -3,6 +3,13 @@ import type { FeedItem, Money, Observation } from "../../core/schema";
 
 /** Compact views of feed items for agents: the facts and the reasons, not the whole row. */
 
+/**
+ * The caveat that used to be an instruction. It travels as data beside every price an agent receives
+ * (feed, plans, Loco proposals): what a price is, where it came from, and that it can differ on the page.
+ */
+export const PRICE_DISCLAIMER =
+  "Prices are sightings from the named source at seen_at, not quotes; the price on the page can differ. Scores and prices are Rumbo's own values, returned as stored.";
+
 export function headlinePrice(o: Observation): Money | undefined {
   switch (o.kind) {
     case "flight": case "activity": return o.price;

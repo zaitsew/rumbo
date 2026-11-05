@@ -73,7 +73,7 @@ export const tiqets: Source = {
   paid: false,
   dailyCap: 500, // our ceiling; Tiqets allows 15 requests a second
   enabled: (env: Env) => Boolean(env.TIQETS_API_KEY),
-  why_disabled: (env: Env) => (env.TIQETS_API_KEY ? null : "set TIQETS_API_KEY (free, Tiqets affiliate portal > Tools > API tokens)"),
+  why_disabled: (env: Env) => (env.TIQETS_API_KEY ? null : "TIQETS_API_KEY is not set (a free key comes from the Tiqets affiliate portal > Tools > API tokens)"),
   async search(q, ctx) {
     if (q.kind !== "activities") return [];
     const key = (ctx.env ?? process.env).TIQETS_API_KEY;

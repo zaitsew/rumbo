@@ -77,7 +77,7 @@ export function applyProfileUpdate(
 
   const merged = ProfileSchema.safeParse(base);
   if (!merged.success) {
-    const missing = current ? "" : " There is no profile yet, so `set` must include home_city and home_airports.";
+    const missing = current ? "" : " There is no profile yet, so `set` needs home_city and home_airports to create one.";
     return { ok: false, error: merged.error.issues.map((i) => `${i.path.join(".") || "profile"}: ${i.message}`).join("; ") + missing };
   }
   return { ok: true, value: { profile: merged.data, changed, notes_added: notesAdded } };

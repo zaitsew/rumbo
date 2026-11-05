@@ -79,7 +79,7 @@ function provenanceLine(o: Observation, price: Money | undefined, what: string):
   const parts = [`Seen ${o.provenance.seen_at} on ${o.provenance.source}`];
   if (price) parts[0] += `: ${formatMoney(price)} ${what}`;
   if (o.provenance.expires_at) parts.push(`valid until ${o.provenance.expires_at}`);
-  return `${parts.join(", ")}. Check the price on the page before booking.`;
+  return `${parts.join(", ")}. The price is a sighting from the source, not a quote.`;
 }
 
 function eventCategory(o: Observation): string {

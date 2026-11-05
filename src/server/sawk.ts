@@ -47,8 +47,8 @@ export function sawkConfigured(env: Env = process.env): boolean {
 }
 
 export function sawkWhyDisabled(env: Env = process.env): string | null {
-  if (!env.SAWK_URL?.trim()) return "SAWK_URL is not set; set it (and SAWK_TOKEN) to see events from SAWk";
-  if (!env.SAWK_TOKEN?.trim()) return "SAWK_TOKEN is not set; create an agent token in SAWk and set it";
+  if (!env.SAWK_URL?.trim()) return "SAWK_URL is not set, so SAWk events are off (SAWK_TOKEN is needed as well)";
+  if (!env.SAWK_TOKEN?.trim()) return "SAWK_TOKEN is not set, so SAWk events are off (an agent token from SAWk fills it)";
   return null;
 }
 

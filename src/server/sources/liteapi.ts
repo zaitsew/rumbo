@@ -66,8 +66,8 @@ export function createLiteapiSource(): Source {
     dailyCap: 100, // $0.01 a call would be at most $1 a day
     enabled: (env: Env) => Boolean(env.LITEAPI_KEY) && env.RUMBO_ALLOW_PAID_LITEAPI === "1",
     why_disabled(env) {
-      if (!env.LITEAPI_KEY) return "set LITEAPI_KEY (liteapi.travel dashboard) and RUMBO_ALLOW_PAID_LITEAPI=1 once the price is approved";
-      if (env.RUMBO_ALLOW_PAID_LITEAPI !== "1") return "paid source: set RUMBO_ALLOW_PAID_LITEAPI=1 to approve the price (docs/SOURCES.md)";
+      if (!env.LITEAPI_KEY) return "LITEAPI_KEY is not set (liteapi.travel dashboard); RUMBO_ALLOW_PAID_LITEAPI=1 records the owner's approval of the price";
+      if (env.RUMBO_ALLOW_PAID_LITEAPI !== "1") return "paid source: RUMBO_ALLOW_PAID_LITEAPI=1 records the owner's approval of the price (docs/SOURCES.md)";
       return null;
     },
     callsFor: (q) => (q.kind === "stays" ? (hotelCache.has(cacheKey(q)) ? 1 : 2) : 0),

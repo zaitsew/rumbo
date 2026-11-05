@@ -9,6 +9,6 @@ export const tool = defineTool({
   inputSchema: z.object({}),
   handler: (_args, ctx) => {
     const profile = ctx.store.getProfile();
-    return profile ? { profile } : { profile: null, note: "No profile yet. Call rumbo_profile_update with home_city and home_airports." };
+    return profile ? { profile } : { profile: null, note: "No profile yet; rumbo_profile_update with home_city and home_airports creates one." };
   },
 });
