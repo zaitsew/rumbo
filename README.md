@@ -22,7 +22,7 @@ Without `RUMBO_OWNER_KEY` the server refuses everything, even on localhost: page
 
 Alpha, in use by one owner. What is in:
 
-- **Planner** (`/plan`): one sentence or a form (English, Spanish, Russian) becomes ranked places with live fares; choosing a place fills flights, stay, activities and events, with links for the car.
+- **Planner** (`/plan`): one sentence or a form (English, Spanish, Russian) becomes ranked places with live fares; choosing a place fills flights, stay, activities and events, with links for the car. Picked dates and candidate fares skip the busy dates in your profile.
 - **Feed** (`/`): observations ranked by deal, fit, taste, urgency and novelty. Each item shows its price with source and link, the reasons behind the score, an optional AI line marked as AI, like / dislike / hide buttons and filters by kind.
 - **MCP** at `/mcp` with 13 tools (feed, feedback, profile, watches, observations, history, agent brief, plans, Loco hand-off), plus the JSON API and OpenAPI document. None of them books, pays or deletes.
 - **Agents**: install scripts and scheduled-run prompts for Claude, Codex, ChatGPT and Grok (`/agents`, `routines/agents/`).
@@ -58,7 +58,9 @@ GET|POST /api/v1/watches            DELETE /api/v1/watches/:id
 GET|POST /api/v1/observations       POST takes an array, at most 200 per call: { accepted, rejected: [{ index, error }] }
 GET|POST /api/v1/feedback
 GET|POST /api/v1/history
-GET      /api/v1/plans              GET /api/v1/plans/:id    GET /api/v1/plans/:id/loco
+GET      /api/v1/plans              GET /api/v1/plans/:id    GET|POST /api/v1/plans/:id/loco   POST marks a ready plan sent-to-loco
+PUT      /api/v1/history?source=loco       replaces that source's whole history (up to 2000 trips); 409 if an id belongs to another source
+PUT      /api/v1/profile/busy?source=loco  replaces that source's busy windows (tagged "(Loco)"); [] clears them
 ```
 
 The OpenAPI 3.1 document (for GPT actions and Grok) is public at `/openapi.json`; `/llms.txt` describes the site for agents. Neither holds a secret.
