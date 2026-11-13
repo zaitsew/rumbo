@@ -120,3 +120,5 @@ The image needs Node 24 or newer for `node:sqlite`.
 ## Licence
 
 Apache-2.0, see `LICENSE`.
+
+<!-- teyla:reviewed 2026-11-13 -->
