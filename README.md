@@ -23,6 +23,7 @@ Without `RUMBO_OWNER_KEY` the server refuses everything, even on localhost: page
 Alpha, in use by one owner. What is in:
 
 - **Planner** (`/plan`): one sentence or a form (English, Spanish, Russian) becomes ranked places with live fares; choosing a place fills flights, stay, activities and events, with links for the car. Picked dates and candidate fares skip the busy dates in your profile.
+- **Watches** (`/watches`): the routes, dates and sources the collector checks.
 - **Feed** (`/`): observations ranked by deal, fit, taste, urgency and novelty. Each item shows its price with source and link, the reasons behind the score, an optional AI line marked as AI, like / dislike / hide buttons and filters by kind.
 - **MCP** at `/mcp` with 13 tools (feed, feedback, profile, watches, observations, history, agent brief, plans, Loco hand-off), plus the JSON API and OpenAPI document. None of them books, pays or deletes.
 - **Agents**: install scripts and scheduled-run prompts for Claude, Codex, ChatGPT and Grok (`/agents`, `routines/agents/`).
@@ -35,9 +36,9 @@ Not in yet: booking (by design, D4) and a rental-car source (car is links only).
 | path | what |
 |---|---|
 | `app/` | Next.js App Router: pages, `/api/v1`, `/signin` |
-| `src/core/` | pure TypeScript: the shared schema and, later, ranking and deep links |
+| `src/core/` | pure TypeScript: schema, ranking, deep links, text parsing, money, Loco mapping |
 | `src/server/` | SQLite store (`node:sqlite`), owner auth, API helpers |
-| `scripts/` | `seed-profile`, `usage`, `validate-data`, `deploy.sh`, `install-claude.sh`, `install-codex.sh`, `run-agent.sh` |
+| `scripts/` | `seed-profile`, `usage`, `validate-data`, `source-smoke`, `deploy.sh`, `install-claude.sh`, `install-codex.sh`, `run-agent.sh`, `launchd/` (daily-run template) |
 | `routines/agents/` | scheduled-run prompts and setup per harness (Claude, Codex, ChatGPT, Grok) |
 | `plugin/` | the Claude Code plugin: manifest and the `rumbo` skill (`skills/rumbo` is a symlink to it) for Claude Code and Codex |
 | `deploy/droplet/` | Dockerfile, compose and Caddy fragments for the shared server |
@@ -114,7 +115,7 @@ The image needs Node 24 or newer for `node:sqlite`.
 
 ## Docs
 
-[Brief](docs/BRIEF.md) · [Architecture](docs/ARCHITECTURE.md) · [Decisions](docs/DECISIONS.md) · [Plan](docs/PLAN.md) · [Getting started](docs/GETTING-STARTED.md)
+[Brief](docs/BRIEF.md) · [Architecture](docs/ARCHITECTURE.md) · [Decisions](docs/DECISIONS.md) · [Plan](docs/PLAN.md) · [Getting started](docs/GETTING-STARTED.md) · [Sources](docs/SOURCES.md) · [MCP OAuth](docs/MCP-OAUTH.md) · [Privacy](docs/PRIVACY.md)
 
 ## Licence
 
