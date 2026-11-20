@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="250" viewBox="0 0 880 250" role="img" aria-label="Rumbo. Plan a trip from one sentence. One ranked travel feed, for you on the web and for your AI agents over MCP. Building, Web, Open source, MCP server.">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Inter,'Segoe UI',Helvetica,Arial,sans-serif;fill:#ECEDF2}.m{fill:#A2A7B5}.cap{font-size:11px;letter-spacing:.06em}.b{font-weight:600}</style>
+<rect x="0.5" y="0.5" width="879" height="249" rx="12" fill="#171A21" stroke="#2B2F3A"/>
+<clipPath id="card"><rect x="0.5" y="0.5" width="879" height="249" rx="12"/></clipPath>
+<defs><radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#3cc4b6" stop-opacity=".22"/><stop offset="1" stop-color="#3cc4b6" stop-opacity="0"/></radialGradient></defs>
+<g clip-path="url(#card)">
+<circle cx="800" cy="125.0" r="170" fill="url(#glow)"/>
+<rect x="687.0" y="12.0" width="226" height="226" rx="63.3" fill="#3cc4b6" fill-opacity="0.05" transform="rotate(12 800 125.0)"/>
+<rect x="718.0" y="43.0" width="164" height="164" rx="45.9" fill="#3cc4b6" fill-opacity="0.08" transform="rotate(12 800 125.0)"/>
+<rect x="748.0" y="73.0" width="104" height="104" rx="29.1" fill="#3cc4b6" fill-opacity="0.13" transform="rotate(12 800 125.0)"/>
+<rect x="772" y="97.0" width="56" height="56" rx="16" fill="#3cc4b6" fill-opacity=".24" transform="rotate(12 800 125.0)"/>
+</g>
+<rect x="40" y="54" width="72" height="72" rx="16" fill="#3cc4b6"/>
+<text x="76" y="102" font-size="34" text-anchor="middle" class="b" style="fill:#14161D">R</text>
+<text class="b" x="136" y="86" font-size="40">Rumbo</text>
+<text x="136" y="122" font-size="19">Plan a trip from one sentence.</text>
+<text class="m" x="136" y="150" font-size="14">One ranked travel feed, for you on the web and for your AI agents over MCP.</text>
+<rect x="136.0" y="172" width="94.4" height="28" rx="14" fill="#9AA7F2" fill-opacity=".16"/>
+<circle cx="151.0" cy="186" r="4" fill="#9AA7F2"/>
+<text class="b" x="164.0" y="191" font-size="13" style="fill:#9AA7F2">Building</text>
+<rect x="238.4" y="172" width="55.3" height="28" rx="14" fill="#1D2029" stroke="#2B2F3A"/>
+<text class="m b" x="252.4" y="191" font-size="13">Web</text>
+<rect x="301.7" y="172" width="106.6" height="28" rx="14" fill="#1D2029" stroke="#2B2F3A"/>
+<text class="m b" x="315.7" y="191" font-size="13">Open source</text>
+<rect x="416.3" y="172" width="101.4" height="28" rx="14" fill="#1D2029" stroke="#2B2F3A"/>
+<text class="m b" x="430.3" y="191" font-size="13">MCP server</text>
+</svg>
