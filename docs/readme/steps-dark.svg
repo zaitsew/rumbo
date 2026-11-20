@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="169" viewBox="0 0 880 169" role="img" aria-label="How it works. 1. Say where. One sentence or a short form. 2. Get a shortlist. Ranked places with live fares. 3. Choose a place. Flights, stay, activities, events. 4. Follow the feed. Watches collect, you like or hide. 5. Hand off. Send the plan to Loco.">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Inter,'Segoe UI',Helvetica,Arial,sans-serif;fill:#ECEDF2}.m{fill:#A2A7B5}.cap{font-size:11px;letter-spacing:.06em}.b{font-weight:600}</style>
+<rect x="0.5" y="0.5" width="879" height="168" rx="12" fill="#171A21" stroke="#2B2F3A"/>
+<line x1="90.0" x2="190.0" y1="52" y2="52" stroke="#2B2F3A" stroke-width="2" stroke-linecap="round"/>
+<circle cx="60.0" cy="52" r="20" fill="#3cc4b6"/>
+<text class="b" x="60.0" y="58" font-size="17" text-anchor="middle" style="fill:#14161D">1</text>
+<text class="b" x="40.0" y="98" font-size="15.5">Say where</text>
+<text class="m" x="40.0" y="120" font-size="13.5">One sentence or a</text>
+<text class="m" x="40.0" y="139" font-size="13.5">short form.</text>
+<line x1="250.0" x2="350.0" y1="52" y2="52" stroke="#2B2F3A" stroke-width="2" stroke-linecap="round"/>
+<circle cx="220.0" cy="52" r="20" fill="#3cc4b6"/>
+<text class="b" x="220.0" y="58" font-size="17" text-anchor="middle" style="fill:#14161D">2</text>
+<text class="b" x="200.0" y="98" font-size="15.5">Get a shortlist</text>
+<text class="m" x="200.0" y="120" font-size="13.5">Ranked places with</text>
+<text class="m" x="200.0" y="139" font-size="13.5">live fares.</text>
+<line x1="410.0" x2="510.0" y1="52" y2="52" stroke="#2B2F3A" stroke-width="2" stroke-linecap="round"/>
+<circle cx="380.0" cy="52" r="20" fill="#3cc4b6"/>
+<text class="b" x="380.0" y="58" font-size="17" text-anchor="middle" style="fill:#14161D">3</text>
+<text class="b" x="360.0" y="98" font-size="15.5">Choose a place</text>
+<text class="m" x="360.0" y="120" font-size="13.5">Flights, stay,</text>
+<text class="m" x="360.0" y="139" font-size="13.5">activities, events.</text>
+<line x1="570.0" x2="670.0" y1="52" y2="52" stroke="#2B2F3A" stroke-width="2" stroke-linecap="round"/>
+<circle cx="540.0" cy="52" r="20" fill="#3cc4b6"/>
+<text class="b" x="540.0" y="58" font-size="17" text-anchor="middle" style="fill:#14161D">4</text>
+<text class="b" x="520.0" y="98" font-size="15.5">Follow the feed</text>
+<text class="m" x="520.0" y="120" font-size="13.5">Watches collect, you</text>
+<text class="m" x="520.0" y="139" font-size="13.5">like or hide.</text>
+<circle cx="700.0" cy="52" r="20" fill="#3cc4b6"/>
+<text class="b" x="700.0" y="58" font-size="17" text-anchor="middle" style="fill:#14161D">5</text>
+<text class="b" x="680.0" y="98" font-size="15.5">Hand off</text>
+<text class="m" x="680.0" y="120" font-size="13.5">Send the plan to</text>
+<text class="m" x="680.0" y="139" font-size="13.5">Loco.</text>
+</svg>

@@ -1,0 +1,26 @@
+{
+  "name": "Rumbo",
+  "tagline": "Plan a trip from one sentence.",
+  "summary": "One ranked travel feed, for you on the web and for your AI agents over MCP.",
+  "accent": "#0f766e",
+  "accent_dark": "#3cc4b6",
+  "status": "building",
+  "kind": "web",
+  "platforms": ["web"],
+  "pills": ["Open source", "MCP server"],
+  "highlights": [
+    {"label": "PLANNER", "title": "One sentence becomes a trip", "text": "English, Spanish or Russian in; ranked places with live fares out."},
+    {"label": "FARES", "title": "Prices from licensed sources", "text": "Every price shows its source and link. The AI never writes a number."},
+    {"label": "FEED", "title": "One ranked travel feed", "text": "Scored on deal, fit, taste, urgency and novelty, with reasons shown."},
+    {"label": "WATCHES", "title": "Watch routes, stays, activities", "text": "An hourly collector checks each watch within its daily caps."},
+    {"label": "MCP", "title": "13 tools for your agents", "text": "Claude, Codex, ChatGPT and Grok connect over MCP or JSON."},
+    {"label": "SAFE", "title": "Agents propose, you decide", "text": "No tool books, pays or deletes. One owner key guards it all."}
+  ],
+  "steps": [
+    {"title": "Say where", "text": "One sentence or a short form."},
+    {"title": "Get a shortlist", "text": "Ranked places with live fares."},
+    {"title": "Choose a place", "text": "Flights, stay, activities, events."},
+    {"title": "Follow the feed", "text": "Watches collect, you like or hide."},
+    {"title": "Hand off", "text": "Send the plan to Loco."}
+  ]
+}
