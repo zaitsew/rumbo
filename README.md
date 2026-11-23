@@ -50,12 +50,14 @@ All routes under `/api/v1` need the owner key, except `GET /api/v1/health`. Erro
 |---|---|
 | `GET` `PUT` `PATCH /api/v1/profile` | Read or write the profile. `PATCH` merges `{ set, note, agent }` and never deletes |
 | `GET /api/v1/feed` | Ranked feed, best first. `?limit &kinds &include_stale` |
+| `POST /api/v1/collect` | Run the due watches now (the hourly scheduler calls it) |
 | `GET /api/v1/brief` | What a scheduled run should do now. `?agent &connectors` |
 | `GET` `POST /api/v1/watches` | List or add watches. `DELETE /api/v1/watches/:id` removes one |
 | `GET` `POST /api/v1/observations` | `POST` takes an array, at most 200 per call: `{ accepted, rejected: [{ index, error }] }` |
 | `GET` `POST /api/v1/feedback` | Read or send feedback on feed items |
-| `GET` `POST /api/v1/history` | Read or import travel history |
-| `GET /api/v1/plans` | List plans. `GET /api/v1/plans/:id` reads one; `GET /api/v1/plans/:id/loco` gives the Loco hand-off |
+| `GET` `POST` `PUT /api/v1/history` | Read or import travel history. `PUT ?source=loco` replaces that source's whole history |
+| `PUT /api/v1/profile/busy` | `?source=loco` replaces the busy windows Loco owns; plans respect them |
+| `GET /api/v1/plans` | List plans. `GET /api/v1/plans/:id` reads one; `GET /api/v1/plans/:id/loco` gives the Loco hand-off; `POST` on it marks the plan `sent-to-loco` |
 
 The OpenAPI 3.1 document (for GPT actions and Grok) is public at `/openapi.json`; `/llms.txt` describes the site for agents. Neither holds a secret.
 
@@ -124,9 +126,9 @@ Without that variable no forwarded header is believed and all clients share one 
 | Path | What |
 |---|---|
 | `app/` | Next.js App Router: pages, `/api/v1`, `/signin` |
-| `src/core/` | Pure TypeScript: the shared schema and, later, ranking and deep links |
+| `src/core/` | Pure TypeScript: the shared schema, ranking, destination pool, deep links, Loco export |
 | `src/server/` | SQLite store (`node:sqlite`), owner auth, API helpers |
-| `scripts/` | `seed-profile`, `usage`, `validate-data`, `deploy.sh`, `install-claude.sh`, `install-codex.sh`, `run-agent.sh` |
+| `scripts/` | `seed-profile`, `usage`, `validate-data`, `source-smoke`, `deploy.sh`, `install-claude.sh`, `install-codex.sh`, `run-agent.sh`, `launchd/` |
 | `routines/agents/` | Scheduled-run prompts and setup per harness (Claude, Codex, ChatGPT, Grok) |
 | `plugin/` | The Claude Code plugin: manifest and the `rumbo` skill (`skills/rumbo` is a symlink to it) for Claude Code and Codex |
 | `deploy/droplet/` | Dockerfile, compose and Caddy fragments for the shared server |
@@ -166,5 +168,7 @@ The image needs Node 24 or newer for `node:sqlite`.
 ## Licence
 
 Apache-2.0, see `LICENSE`.
+
+<sub>Dijkstra finds the shortest path in a graph. Rumbo ranks a flat list instead, and every edge weight, meaning every fare, comes from a real source.</sub>
 
 <sub>Built by <a href="https://github.com/zaitsew">zaitsew</a> with a fleet of AI agents.</sub>
