@@ -169,6 +169,4 @@ The image needs Node 24 or newer for `node:sqlite`.
 
 Apache-2.0, see `LICENSE`.
 
-<sub>Dijkstra finds the shortest path in a graph. Rumbo ranks a flat list instead, and every edge weight, meaning every fare, comes from a real source.</sub>
-
-<sub>Built by <a href="https://github.com/zaitsew">zaitsew</a> with a fleet of AI agents.</sub>
+<sub>Built by <a href="https://github.com/zaitsew">zaitsew</a> with a fleet of AI agents[.](.github/egg/loop.geojson "Planned from one sentence: 19 cities, one loop, any order that looks good from orbit.")</sub>

@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "plan": "loop-19",
+        "asked": "19 cities, one loop, any order that looks good from orbit",
+        "stops": "Palma, Zaragoza, Pamplona, Toulouse, Dijon, Frankfurt, Dresden, Oslo, Szczecin, Stockholm, Poznan, Lublin, Rzeszow, Kosice, Sarajevo, Patras, Catania, Pescara, Palermo, Palma",
+        "fares": "none seen yet, so none shown",
+        "stroke": "#e8590c",
+        "stroke-width": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [2.65, 39.57],
+          [-0.88, 41.65],
+          [-1.64, 42.81],
+          [1.44, 43.6],
+          [5.04, 47.32],
+          [8.68, 50.11],
+          [13.74, 51.05],
+          [10.75, 59.91],
+          [14.55, 53.43],
+          [18.07, 59.33],
+          [16.93, 52.41],
+          [22.57, 51.25],
+          [22.0, 50.04],
+          [21.26, 48.72],
+          [18.41, 43.86],
+          [21.73, 38.25],
+          [15.09, 37.5],
+          [14.21, 42.46],
+          [13.36, 38.12],
+          [2.65, 39.57]
+        ]
+      }
+    }
+  ]
+}
